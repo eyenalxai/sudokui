@@ -1,20 +1,26 @@
 {
   "name": "sudokui",
-  "module": "src/index.tsx",
-  "type": "module",
   "private": true,
+  "type": "module",
+  "module": "src/index.tsx",
   "scripts": {
+    "lint": "oxlint --type-aware --fix && tsc --noEmit --pretty",
+    "format": "oxfmt",
     "dev": "bun run --watch src/index.tsx"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
   },
   "dependencies": {
     "@opentui/core": "^0.1.75",
     "@opentui/react": "^0.1.75",
-    "react": "^19.2.3"
+    "react": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.8",
+    "@types/react": "^19.2.10",
+    "oxfmt": "^0.27.0",
+    "oxlint": "^1.42.0",
+    "oxlint-tsgolint": "^0.11.4"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.3"
   }
 }
