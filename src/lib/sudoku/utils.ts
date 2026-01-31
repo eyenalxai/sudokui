@@ -1,4 +1,4 @@
-import type { Cell, CellValue, Difficulty, Houses, InternalBoard, Strategy } from "./types"
+import type { CellValue, Difficulty, Houses, InternalBoard, Strategy } from "./types"
 
 import {
   BOARD_SIZE,
@@ -174,24 +174,9 @@ export const calculateBoardDifficulty = (
 
 /* cloneBoard
  * --------------
- *  Deep clones an InternalBoard using JSON parse/stringify
- *  with proper type safety
+ *  Deep clones an InternalBoard using structuredClone
+ *  Native, type-safe, and faster than JSON parse/stringify
  * -----------------------------------------------------------------*/
-const isCell = (cell: unknown): cell is Cell => {
-  if (cell === null || typeof cell !== "object") return false
-  const keys = Object.keys(cell)
-  return (
-    keys.includes("value") &&
-    keys.includes("candidates") &&
-    Array.isArray((cell as Record<string, unknown>)["candidates"])
-  )
-}
-
 export const cloneBoard = (board: InternalBoard): InternalBoard => {
-  const cloned: unknown = JSON.parse(JSON.stringify(board))
-  // Type guard to validate the cloned structure matches InternalBoard
-  if (!Array.isArray(cloned) || cloned.length !== 81 || !cloned.every(isCell)) {
-    throw new Error("cloneBoard failed: invalid board structure")
-  }
-  return cloned
+  return structuredClone(board)
 }
