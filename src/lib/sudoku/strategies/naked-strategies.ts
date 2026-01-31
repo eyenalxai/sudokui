@@ -41,7 +41,7 @@ function collectCombineInfoCells(combineInfo: Array<CombineInfo>): number[] {
 }
 
 function collectCombineInfoCandidates(combineInfo: Array<CombineInfo>): Array<CellValue> {
-  const combined: Array<CellValue> = []
+  const combined = new Set<CellValue>()
   for (let x = 0; x < combineInfo.length; x++) {
     const info = combineInfo[x]
     if (info === undefined) continue
@@ -50,15 +50,15 @@ function collectCombineInfoCandidates(combineInfo: Array<CombineInfo>): Array<Ce
       const cand = cands[c]
       if (cand === undefined) continue
       if (cand !== null) {
-        combined.push(cand)
+        combined.add(cand)
       }
     }
   }
-  return combined
+  return Array.from(combined)
 }
 
 export function createNakedStrategies({ groupOfHouses, boardSize, helpers }: NakedStrategyContext) {
-  const { getRemainingNumbers, getRemainingCandidates, removeCandidatesFromMultipleCells } = helpers
+  const { getRemainingNumbers, getRemainingCandidates, applyCandidateRemovals } = helpers
 
   function nakedCandidatesStrategy(number: number): EliminationUpdate[] | false {
     let combineInfo: Array<CombineInfo> = []
@@ -96,6 +96,7 @@ export function createNakedStrategies({ groupOfHouses, boardSize, helpers }: Nak
     ): EliminationUpdate[] | false {
       const minIndex = minIndexes[startIndex]
       if (minIndex === undefined) return false
+      // Use "<" here because we iterate cell indices (0..boardSize-1), not candidates.
       for (let i = Math.max(startIndex, minIndex); i < boardSize - number + startIndex; i++) {
         minIndexes[startIndex] = i + 1
         minIndexes[startIndex + 1] = i + 1
@@ -129,11 +130,10 @@ export function createNakedStrategies({ groupOfHouses, boardSize, helpers }: Nak
           const cellsWithCandidates = collectCombineInfoCells(combineInfo)
           const combinedCandidates = collectCombineInfoCandidates(combineInfo)
 
-          const cellsEffected = house.filter(
-            (cellIndex) => !cellsWithCandidates.includes(cellIndex),
-          )
+          const cellsWithCandidatesSet = new Set(cellsWithCandidates)
+          const cellsAffected = house.filter((cellIndex) => !cellsWithCandidatesSet.has(cellIndex))
 
-          const cellsUpdated = removeCandidatesFromMultipleCells(cellsEffected, combinedCandidates)
+          const cellsUpdated = applyCandidateRemovals(cellsAffected, combinedCandidates)
 
           if (cellsUpdated.length > 0) {
             return cellsUpdated
@@ -149,15 +149,15 @@ export function createNakedStrategies({ groupOfHouses, boardSize, helpers }: Nak
     }
   }
 
-  function nakedPairStrategy() {
+  function nakedPairStrategy(): EliminationUpdate[] | false {
     return nakedCandidatesStrategy(2)
   }
 
-  function nakedTripletStrategy() {
+  function nakedTripletStrategy(): EliminationUpdate[] | false {
     return nakedCandidatesStrategy(3)
   }
 
-  function nakedQuadrupleStrategy() {
+  function nakedQuadrupleStrategy(): EliminationUpdate[] | false {
     return nakedCandidatesStrategy(4)
   }
 

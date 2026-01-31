@@ -30,8 +30,7 @@ export function createHiddenStrategies({
   boardSize,
   helpers,
 }: HiddenStrategyContext) {
-  const { getRemainingNumbers, getPossibleCellsForCandidate, removeCandidatesFromMultipleCells } =
-    helpers
+  const { getRemainingNumbers, getPossibleCellsForCandidate, applyCandidateRemovals } = helpers
 
   function hiddenLockedCandidates(number: number) {
     let combineInfo: Array<{
@@ -76,15 +75,13 @@ export function createHiddenStrategies({
             cellsWithCandidates = cellsWithCandidates.concat(info.cells)
           }
 
+          const combinedCandidatesSet = new Set(combinedCandidates)
           const candidatesToRemove = []
           for (let c = 0; c < boardSize; c++) {
-            if (!combinedCandidates.includes(c + 1)) candidatesToRemove.push(c + 1)
+            if (!combinedCandidatesSet.has(c + 1)) candidatesToRemove.push(c + 1)
           }
 
-          const cellsUpdated = removeCandidatesFromMultipleCells(
-            cellsWithCandidates,
-            candidatesToRemove,
-          )
+          const cellsUpdated = applyCandidateRemovals(cellsWithCandidates, candidatesToRemove)
 
           if (cellsUpdated.length > 0) {
             return cellsUpdated

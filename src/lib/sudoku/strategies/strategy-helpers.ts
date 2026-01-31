@@ -7,7 +7,7 @@ export type StrategyHelpersContext = {
 }
 
 export function createStrategyHelpers({ getBoard, boardSize, candidates }: StrategyHelpersContext) {
-  const removeCandidatesFromMultipleCells = (
+  const applyCandidateRemovals = (
     cells: Array<number>,
     candidatesToRemove: Array<CellValue>,
   ): EliminationUpdate[] => {
@@ -94,7 +94,7 @@ export function createStrategyHelpers({ getBoard, boardSize, candidates }: Strat
   }
 
   return {
-    removeCandidatesFromMultipleCells,
+    applyCandidateRemovals,
     housesWithCell,
     getRemainingNumbers,
     getUsedNumbers,

@@ -14,7 +14,7 @@ export function createEliminationStrategies({
   boardSize,
   helpers,
 }: EliminationStrategyContext) {
-  const { getRemainingNumbers, housesWithCell, removeCandidatesFromMultipleCells } = helpers
+  const { getRemainingNumbers, housesWithCell, applyCandidateRemovals } = helpers
 
   function collectPointingCandidates(house: House, digit: number, houseType: number) {
     const board = getBoard()
@@ -87,8 +87,9 @@ export function createEliminationStrategies({
 
           if (!altHouse) continue
 
-          const cellsEffected = altHouse.filter((cell) => !cellsWithCandidate.includes(cell))
-          const cellsUpdated = removeCandidatesFromMultipleCells(cellsEffected, [digit])
+          const cellsWithCandidateSet = new Set(cellsWithCandidate)
+          const cellsAffected = altHouse.filter((cell) => !cellsWithCandidateSet.has(cell))
+          const cellsUpdated = applyCandidateRemovals(cellsAffected, [digit])
           if (cellsUpdated.length > 0) {
             return cellsUpdated
           }
