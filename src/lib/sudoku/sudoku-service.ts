@@ -20,6 +20,7 @@ import { isUniqueSolution } from "./sudoku-solver"
 import {
   addValueToCellIndex,
   calculateBoardDifficulty,
+  cloneBoard,
   contains,
   generateHouseIndexList,
   getRandomCandidateOfCell,
@@ -536,7 +537,7 @@ export function createSudokuInstance(options: Options = {}) {
           const temp = [...cellCandidates]
 
           for (let a = 0; a < combineInfo.length; a++) {
-            const candidates = combineInfo[a]!.candidates || []
+            const candidates = combineInfo[a]!.candidates
             for (let b = 0; b < candidates.length; b++) {
               const cand = candidates[b]!
               if (!temp.includes(cand)) {
@@ -566,7 +567,7 @@ export function createSudokuInstance(options: Options = {}) {
 
           for (let x = 0; x < combineInfo.length; x++) {
             cellsWithCandidates.push(combineInfo[x]!.cell)
-            const cands = combineInfo[x]!.candidates || []
+            const cands = combineInfo[x]!.candidates
             for (let c = 0; c < cands.length; c++) {
               const cand = cands[c]!
               if (cand !== null) {
@@ -847,9 +848,11 @@ export function createSudokuInstance(options: Options = {}) {
     }
   }
 
-  function isValidAndEasyEnough(analysis: AnalyzeData, difficulty: Difficulty) {
+  function isValidAndEasyEnough(analysis: AnalyzeData, difficulty: Difficulty): boolean {
     return (
-      analysis.hasSolution && analysis.difficulty && isEasyEnough(difficulty, analysis.difficulty)
+      analysis.hasSolution &&
+      analysis.difficulty !== undefined &&
+      isEasyEnough(difficulty, analysis.difficulty)
     )
   }
   // Function to prepare the game board
@@ -887,10 +890,10 @@ export function createSudokuInstance(options: Options = {}) {
 
   function analyzeBoard() {
     let usedStrategiesClone = usedStrategies.slice()
-    let boardClone = JSON.parse(JSON.stringify(board))
+    let boardClone = cloneBoard(board)
 
     let Continue: boolean | "value" | "elimination" = true
-    while (Continue) {
+    while (Continue !== false) {
       Continue = applySolvingStrategies({
         strategyIndex: Continue === "elimination" ? 1 : 0,
         analyzeMode: true,
@@ -910,10 +913,10 @@ export function createSudokuInstance(options: Options = {}) {
     board = boardClone
 
     usedStrategiesClone = usedStrategies.slice()
-    boardClone = JSON.parse(JSON.stringify(board))
+    boardClone = cloneBoard(board)
 
     let solvedBoard: false | Board = [...getBoard()]
-    while (solvedBoard && !solvedBoard.every(Boolean)) {
+    while (solvedBoard !== false && !solvedBoard.every(Boolean)) {
       solvedBoard = solveStep({ analyzeMode: true, iterationCount: 0 })
     }
 
@@ -926,7 +929,7 @@ export function createSudokuInstance(options: Options = {}) {
   function generateBoard(): Board {
     generateBoardAnswerRecursively(0)
 
-    const slicedBoard = JSON.parse(JSON.stringify(board))
+    const slicedBoard = cloneBoard(board)
 
     function isBoardTooEasy() {
       prepareGameBoard()
@@ -938,7 +941,7 @@ export function createSudokuInstance(options: Options = {}) {
     }
 
     function restoreBoardAnswer() {
-      board = slicedBoard.slice()
+      board = slicedBoard
     }
 
     while (isBoardTooEasy()) {
@@ -977,7 +980,7 @@ export function createSudokuInstance(options: Options = {}) {
 
   const solveAll = (): Board => {
     let Continue: boolean | "value" | "elimination" = true
-    while (Continue) {
+    while (Continue !== false) {
       Continue = applySolvingStrategies({
         strategyIndex: Continue === "elimination" ? 1 : 0,
       })
