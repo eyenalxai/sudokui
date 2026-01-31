@@ -1,14 +1,27 @@
 import { Schema } from "effect"
 
 import { DifficultyLevel } from "./difficulty.ts"
+import { Technique } from "./techniques.ts"
 
-export const CellIndex = Schema.Number.pipe(Schema.int(), Schema.between(0, 80))
+export const CellIndex = Schema.Number.pipe(
+  Schema.int(),
+  Schema.between(0, 80),
+  Schema.brand("CellIndex"),
+)
 export type CellIndex = typeof CellIndex.Type
 
-export const CellValue = Schema.Number.pipe(Schema.int(), Schema.between(0, 9))
+export const CellValue = Schema.Number.pipe(
+  Schema.int(),
+  Schema.between(0, 9),
+  Schema.brand("CellValue"),
+)
 export type CellValue = typeof CellValue.Type
 
-export const Candidates = Schema.Number.pipe(Schema.int(), Schema.between(0, 511))
+export const Candidates = Schema.Number.pipe(
+  Schema.int(),
+  Schema.between(0, 511),
+  Schema.brand("Candidates"),
+)
 export type Candidates = typeof Candidates.Type
 
 export class InvalidPuzzleError extends Schema.TaggedError<InvalidPuzzleError>()(
@@ -21,7 +34,7 @@ export class InvalidPuzzleError extends Schema.TaggedError<InvalidPuzzleError>()
 
 export class GenerationError extends Schema.TaggedError<GenerationError>()("GenerationError", {
   message: Schema.String,
-  difficulty: Schema.optional(Schema.String),
+  difficulty: Schema.optional(DifficultyLevel),
 }) {}
 
 export class SolveError extends Schema.TaggedError<SolveError>()("SolveError", {
@@ -46,12 +59,12 @@ export const SolutionResult = Schema.Struct({
 export type SolutionResult = typeof SolutionResult.Type
 
 export const Puzzle = Schema.Struct({
-  grid: Schema.String, // 81-character string
-  solution: Schema.String, // 81-character string
-  difficulty: Schema.String,
+  grid: Schema.String,
+  solution: Schema.String,
+  difficulty: DifficultyLevel,
   score: Schema.Number,
   clues: Schema.Number,
-  techniques: Schema.Array(Schema.String),
+  techniques: Schema.Array(Technique),
 })
 export type Puzzle = typeof Puzzle.Type
 

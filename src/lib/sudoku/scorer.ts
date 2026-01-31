@@ -87,6 +87,7 @@ const analyzePuzzleImpl = (
 }
 
 export class DifficultyScorer extends Effect.Service<DifficultyScorer>()("DifficultyScorer", {
+  accessors: true,
   succeed: {
     calculateScore: (techniques: Technique[]): Effect.Effect<number> =>
       Effect.succeed(calculateScoreImpl(techniques)),

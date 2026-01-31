@@ -1,7 +1,5 @@
 import { Effect } from "effect"
 
-import { InvalidPuzzleError } from "../puzzle.ts"
-
 import { countCandidates, getSingleCandidate } from "./candidates.ts"
 import { ALL_CANDIDATES, CANDIDATE_MASKS } from "./constants.ts"
 import { getPeers } from "./helpers.ts"
@@ -60,19 +58,17 @@ export class SudokuGrid {
   }
 
   // Create from puzzle string
-  static fromString(puzzle: string): Effect.Effect<SudokuGrid, InvalidPuzzleError> {
-    return Effect.gen(function* () {
-      const values = yield* parsePuzzle(puzzle)
-      const grid = new SudokuGrid()
-      for (let i = 0; i < 81; i++) {
-        const value = values[i]
-        if (value !== undefined && value !== 0) {
-          grid.setCell(i, value, true)
-        }
+  static fromString = Effect.fn("SudokuGrid.fromString")(function* (puzzle: string) {
+    const values = yield* parsePuzzle(puzzle)
+    const grid = new SudokuGrid()
+    for (let i = 0; i < 81; i++) {
+      const value = values[i]
+      if (value !== undefined && value !== 0) {
+        grid.setCell(i, value, true)
       }
-      return grid
-    })
-  }
+    }
+    return grid
+  })
 
   // Clone the grid
   clone(): SudokuGrid {

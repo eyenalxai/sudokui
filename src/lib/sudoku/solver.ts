@@ -82,6 +82,7 @@ const findSolutionImpl = (grid: SudokuGrid): SudokuGrid | null => {
 }
 
 export class SolutionFinder extends Effect.Service<SolutionFinder>()("SolutionFinder", {
+  accessors: true,
   succeed: {
     countSolutions: (grid: SudokuGrid, maxCount: number): Effect.Effect<number> =>
       Effect.succeed(countSolutionsImpl(grid, maxCount)),

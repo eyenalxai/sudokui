@@ -7,6 +7,7 @@ import { DifficultyScorer } from "./scorer.ts"
 import { SolutionFinder } from "./solver.ts"
 
 export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGenerator", {
+  accessors: true,
   dependencies: [SolutionFinder.Default, DifficultyScorer.Default],
   effect: Effect.gen(function* () {
     const solutionFinder = yield* SolutionFinder
@@ -191,7 +192,9 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
           const solutionResult = yield* solutionFinder
             .solve(puzzle)
             .pipe(
-              Effect.catchAll(() => Effect.succeed({ solved: false, solutionCount: 0, steps: [] })),
+              Effect.catchTag("SolveError", () =>
+                Effect.succeed({ solved: false, solutionCount: 0, steps: [] }),
+              ),
             )
 
           if (!solutionResult.solved) {
