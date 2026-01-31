@@ -1,5 +1,3 @@
-import { createSudokuInstance } from "./sudoku-service";
-import { isUniqueSolution } from "./sudoku-solver";
 import type {
   AnalyzeData,
   Board,
@@ -15,7 +13,10 @@ import type {
   Strategy,
   StrategyFn,
   Update,
-} from "./types";
+} from "./types"
+
+import { createSudokuInstance } from "./sudoku-service"
+import { isUniqueSolution } from "./sudoku-solver"
 
 export type {
   AnalyzeData,
@@ -32,38 +33,38 @@ export type {
   Strategy,
   StrategyFn,
   Update,
-};
+}
 
 export function analyze(board: Board): AnalyzeData {
   const { analyzeBoard } = createSudokuInstance({
     initBoard: board.slice(),
-  });
-  return { ...analyzeBoard(), hasUniqueSolution: isUniqueSolution(board) };
+  })
+  return { ...analyzeBoard(), hasUniqueSolution: isUniqueSolution(board) }
 }
 
 export function generate(difficulty: Difficulty): Board {
-  const { getBoard } = createSudokuInstance({ difficulty });
+  const { getBoard } = createSudokuInstance({ difficulty })
   if (!analyze(getBoard()).hasUniqueSolution) {
-    return generate(difficulty);
+    return generate(difficulty)
   }
-  return getBoard();
+  return getBoard()
 }
 
 export function solve(board: Board): SolvingResult {
-  const solvingSteps: SolvingStep[] = [];
+  const solvingSteps: SolvingStep[] = []
 
   const { solveAll } = createSudokuInstance({
     initBoard: board.slice(),
     onUpdate: (solvingStep) => solvingSteps.push(solvingStep),
-  });
+  })
 
-  const analysis = analyze(board);
+  const analysis = analyze(board)
 
   if (!analysis.hasSolution) {
-    return { solved: false, error: "No solution for provided board!" };
+    return { solved: false, error: "No solution for provided board!" }
   }
 
-  const solvedBoard = solveAll();
+  const solvedBoard = solveAll()
 
   if (!analysis.hasUniqueSolution) {
     return {
@@ -72,27 +73,27 @@ export function solve(board: Board): SolvingResult {
       steps: solvingSteps,
       analysis,
       error: "No unique solution for provided board!",
-    };
+    }
   }
 
-  return { solved: true, board: solvedBoard, steps: solvingSteps, analysis };
+  return { solved: true, board: solvedBoard, steps: solvingSteps, analysis }
 }
 
 export function hint(board: Board): SolvingResult {
-  const solvingSteps: SolvingStep[] = [];
+  const solvingSteps: SolvingStep[] = []
   const { solveStep } = createSudokuInstance({
     initBoard: board.slice(),
     onUpdate: (solvingStep) => solvingSteps.push(solvingStep),
-  });
-  const analysis = analyze(board);
+  })
+  const analysis = analyze(board)
 
   if (!analysis.hasSolution) {
-    return { solved: false, error: "No solution for provided board!" };
+    return { solved: false, error: "No solution for provided board!" }
   }
-  const solvedBoard = solveStep();
+  const solvedBoard = solveStep()
 
   if (!solvedBoard) {
-    return { solved: false, error: "No solution for provided board!" };
+    return { solved: false, error: "No solution for provided board!" }
   }
 
   if (!analysis.hasUniqueSolution) {
@@ -102,12 +103,12 @@ export function hint(board: Board): SolvingResult {
       steps: solvingSteps,
       analysis,
       error: "No unique solution for provided board!",
-    };
+    }
   }
 
-  return { solved: true, board: solvedBoard, steps: solvingSteps, analysis };
+  return { solved: true, board: solvedBoard, steps: solvingSteps, analysis }
 }
 
-export { createSudokuInstance, isUniqueSolution };
-export * from "./constants";
-export * from "./types";
+export { createSudokuInstance, isUniqueSolution }
+export * from "./constants"
+export * from "./types"

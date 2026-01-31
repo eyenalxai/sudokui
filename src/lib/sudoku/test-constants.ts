@@ -41,7 +41,7 @@ export const EASY_SUDOKU_BOARD_FOR_TEST = [
   null,
   4,
   null,
-  2,
+  null,
   null,
   6,
   6,
@@ -80,7 +80,7 @@ export const EASY_SUDOKU_BOARD_FOR_TEST = [
   4,
   null,
   null,
-];
+]
 
 export const MEDIUM_SUDOKU_BOARD_FOR_TEST = [
   7,
@@ -164,7 +164,7 @@ export const MEDIUM_SUDOKU_BOARD_FOR_TEST = [
   null,
   null,
   9,
-];
+]
 
 export const HARD_SUDOKU_BOARD_FOR_TEST = [
   null,
@@ -201,7 +201,6 @@ export const HARD_SUDOKU_BOARD_FOR_TEST = [
   null,
   null,
   null,
-  null,
   3,
   1,
   9,
@@ -214,7 +213,6 @@ export const HARD_SUDOKU_BOARD_FOR_TEST = [
   null,
   null,
   7,
-  null,
   null,
   null,
   null,
@@ -235,9 +233,7 @@ export const HARD_SUDOKU_BOARD_FOR_TEST = [
   null,
   null,
   null,
-  null,
   2,
-  null,
   null,
   null,
   null,
@@ -252,7 +248,7 @@ export const HARD_SUDOKU_BOARD_FOR_TEST = [
   null,
   5,
   2,
-];
+]
 
 export const EXPERT_SUDOKU_BOARD_FOR_TEST = [
   null,
@@ -283,7 +279,7 @@ export const EXPERT_SUDOKU_BOARD_FOR_TEST = [
   5,
   null,
   null,
-  7,
+  null,
   4,
   9,
   null,
@@ -336,7 +332,7 @@ export const EXPERT_SUDOKU_BOARD_FOR_TEST = [
   null,
   7,
   null,
-];
+]
 
 export const MASTER_SUDOKU_BOARD_FOR_TEST = [
   null,
@@ -346,7 +342,6 @@ export const MASTER_SUDOKU_BOARD_FOR_TEST = [
   null,
   null,
   null,
-  null,
   4,
   null,
   6,
@@ -395,7 +390,6 @@ export const MASTER_SUDOKU_BOARD_FOR_TEST = [
   null,
   null,
   null,
-  null,
   1,
   null,
   null,
@@ -422,4 +416,4 @@ export const MASTER_SUDOKU_BOARD_FOR_TEST = [
   2,
   null,
   null,
-];
+]
