@@ -1,7 +1,5 @@
 import { CANDIDATE_MASKS } from "./constants.ts"
 
-// Candidate Helpers
-
 export const countCandidates = (candidates: number): number => {
   let count = 0
   let mask = candidates
@@ -24,7 +22,6 @@ export const getSingleCandidate = (candidates: number): number | null => {
   return null
 }
 
-// Get array of candidate values from bitmask
 export const getCandidatesArray = (candidates: number): number[] => {
   const result: number[] = []
   for (let i = 1; i <= 9; i++) {

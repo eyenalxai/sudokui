@@ -2,8 +2,6 @@ import { Effect } from "effect"
 
 import { InvalidPuzzleError } from "../puzzle.ts"
 
-// Grid Parsing
-
 export const parsePuzzle = (puzzle: string): Effect.Effect<number[], InvalidPuzzleError> => {
   if (puzzle.length !== 81) {
     return Effect.fail(
@@ -17,7 +15,6 @@ export const parsePuzzle = (puzzle: string): Effect.Effect<number[], InvalidPuzz
   for (let i = 0; i < 81; i++) {
     const char = puzzle[i]
     if (char === undefined) {
-      // This shouldn't happen since we checked length, but handle it for type safety
       return Effect.fail(
         new InvalidPuzzleError({
           message: `Unexpected undefined at position ${i}`,

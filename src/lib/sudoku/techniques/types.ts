@@ -1,9 +1,5 @@
 import { Schema } from "effect"
 
-// =============================================================================
-// Solving Techniques (matching Hodoku)
-// =============================================================================
-
 export const Technique = Schema.Literal(
   // Singles
   "FULL_HOUSE",

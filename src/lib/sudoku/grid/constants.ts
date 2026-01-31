@@ -1,11 +1,8 @@
-// Grid Constants
-
 export const GRID_SIZE = 81
 export const ROW_SIZE = 9
 export const COL_SIZE = 9
 export const BLOCK_SIZE = 3
 
-// Candidate masks for values 1-9
 export const CANDIDATE_MASKS = [
   0b000000000, // 0 - not valid
   0b000000001, // 1

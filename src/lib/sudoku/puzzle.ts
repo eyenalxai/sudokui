@@ -2,23 +2,14 @@ import { Schema } from "effect"
 
 import { DifficultyLevel } from "./difficulty.ts"
 
-// =============================================================================
-// Cell and Grid Types
-// =============================================================================
-
 export const CellIndex = Schema.Number.pipe(Schema.int(), Schema.between(0, 80))
 export type CellIndex = typeof CellIndex.Type
 
 export const CellValue = Schema.Number.pipe(Schema.int(), Schema.between(0, 9))
 export type CellValue = typeof CellValue.Type
 
-// Bitmask representing possible candidates (bits 0-8 for values 1-9)
 export const Candidates = Schema.Number.pipe(Schema.int(), Schema.between(0, 511))
 export type Candidates = typeof Candidates.Type
-
-// =============================================================================
-// Error Types
-// =============================================================================
 
 export class InvalidPuzzleError extends Schema.TaggedError<InvalidPuzzleError>()(
   "InvalidPuzzleError",
@@ -37,10 +28,6 @@ export class SolveError extends Schema.TaggedError<SolveError>()("SolveError", {
   message: Schema.String,
 }) {}
 
-// =============================================================================
-// Solution Types
-// =============================================================================
-
 export const SolutionStep = Schema.Struct({
   technique: Schema.String,
   cell: CellIndex,
@@ -57,10 +44,6 @@ export const SolutionResult = Schema.Struct({
   finalGrid: Schema.optional(Schema.String),
 })
 export type SolutionResult = typeof SolutionResult.Type
-
-// =============================================================================
-// Puzzle Types
-// =============================================================================
 
 export const Puzzle = Schema.Struct({
   grid: Schema.String, // 81-character string

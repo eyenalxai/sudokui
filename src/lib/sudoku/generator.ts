@@ -6,10 +6,6 @@ import { GenerateOptions, GenerationError } from "./puzzle.ts"
 import { DifficultyScorer } from "./scorer.ts"
 import { SolutionFinder } from "./solver.ts"
 
-// =============================================================================
-// PuzzleGenerator Service
-// =============================================================================
-
 export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGenerator", {
   dependencies: [SolutionFinder.Default, DifficultyScorer.Default],
   effect: Effect.gen(function* () {

@@ -4,10 +4,6 @@ import { DifficultyLevel, DIFFICULTY_THRESHOLDS } from "./difficulty.ts"
 import { SudokuGrid, countCandidates } from "./grid.ts"
 import { Technique, TECHNIQUE_SCORES, TECHNIQUE_DIFFICULTY } from "./techniques.ts"
 
-// =============================================================================
-// Pure computation functions
-// =============================================================================
-
 const calculateScoreImpl = (techniques: Technique[]): number => {
   let score = 0
   for (const tech of techniques) {
@@ -89,10 +85,6 @@ const analyzePuzzleImpl = (
 
   return { difficulty, score, techniques }
 }
-
-// =============================================================================
-// DifficultyScorer Service
-// =============================================================================
 
 export class DifficultyScorer extends Effect.Service<DifficultyScorer>()("DifficultyScorer", {
   succeed: {

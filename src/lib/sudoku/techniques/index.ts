@@ -2,10 +2,6 @@ import { DifficultyLevel } from "../difficulty.ts"
 
 import { Technique } from "./types.ts"
 
-// =============================================================================
-// Technique scores (from Hodoku)
-// =============================================================================
-
 export const TECHNIQUE_SCORES: Record<Technique, number> = {
   // Singles
   FULL_HOUSE: 4,
@@ -122,10 +118,6 @@ export const TECHNIQUE_SCORES: Record<Technique, number> = {
   FORCING_NET: 700,
   BRUTE_FORCE: 10000,
 }
-
-// =============================================================================
-// Difficulty assignment per technique (from Hodoku)
-// =============================================================================
 
 export const TECHNIQUE_DIFFICULTY: Record<Technique, DifficultyLevel> = {
   // Easy

@@ -3,11 +3,6 @@ import { Effect } from "effect"
 import { SudokuGrid, getSingleCandidate, getCandidatesArray } from "./grid.ts"
 import { SolveError } from "./puzzle.ts"
 
-// =============================================================================
-// Pure computation functions
-// =============================================================================
-
-// Count solutions up to max limit
 const countSolutionsImpl = (grid: SudokuGrid, maxCount: number): number => {
   let count = 0
 
@@ -50,7 +45,6 @@ const countSolutionsImpl = (grid: SudokuGrid, maxCount: number): number => {
   return count
 }
 
-// Find the solution
 const findSolutionImpl = (grid: SudokuGrid): SudokuGrid | null => {
   const singles = grid.findNakedSingles()
   if (singles.length > 0) {
@@ -86,10 +80,6 @@ const findSolutionImpl = (grid: SudokuGrid): SudokuGrid | null => {
 
   return null
 }
-
-// =============================================================================
-// SolutionFinder Service
-// =============================================================================
 
 export class SolutionFinder extends Effect.Service<SolutionFinder>()("SolutionFinder", {
   succeed: {
