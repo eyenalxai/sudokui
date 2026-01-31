@@ -10,7 +10,7 @@ export const DifficultyLevel = Schema.Literal(
   "MEDIUM",
   "HARD",
   "UNFAIR",
-  "EXTREME"
+  "EXTREME",
 )
 export type DifficultyLevel = typeof DifficultyLevel.Type
 

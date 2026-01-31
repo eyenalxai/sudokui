@@ -11,10 +11,10 @@ export type { Technique } from "./techniques.ts"
 
 // Grid and Utilities
 export { SudokuGrid, CANDIDATE_MASKS, ALL_CANDIDATES } from "./grid.ts"
-export { 
-  getPeers, 
-  getRowIndices, 
-  getColIndices, 
+export {
+  getPeers,
+  getRowIndices,
+  getColIndices,
   getBlockIndices,
   indexToRow,
   indexToCol,
@@ -34,10 +34,10 @@ export { PuzzleGenerator } from "./generator.ts"
 
 // Difficulty and Techniques
 export { DifficultyLevel as DifficultyLevelSchema, DIFFICULTY_THRESHOLDS } from "./difficulty.ts"
-export { 
-  Technique as TechniqueSchema, 
-  TECHNIQUE_SCORES, 
-  TECHNIQUE_DIFFICULTY 
+export {
+  Technique as TechniqueSchema,
+  TECHNIQUE_SCORES,
+  TECHNIQUE_DIFFICULTY,
 } from "./techniques.ts"
 
 // Errors

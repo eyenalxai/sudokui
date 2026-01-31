@@ -1,27 +1,19 @@
 import { Schema } from "effect"
+
 import { DifficultyLevel } from "./difficulty.ts"
 
 // =============================================================================
 // Cell and Grid Types
 // =============================================================================
 
-export const CellIndex = Schema.Number.pipe(
-  Schema.int(),
-  Schema.between(0, 80)
-)
+export const CellIndex = Schema.Number.pipe(Schema.int(), Schema.between(0, 80))
 export type CellIndex = typeof CellIndex.Type
 
-export const CellValue = Schema.Number.pipe(
-  Schema.int(),
-  Schema.between(0, 9)
-)
+export const CellValue = Schema.Number.pipe(Schema.int(), Schema.between(0, 9))
 export type CellValue = typeof CellValue.Type
 
 // Bitmask representing possible candidates (bits 0-8 for values 1-9)
-export const Candidates = Schema.Number.pipe(
-  Schema.int(),
-  Schema.between(0, 511)
-)
+export const Candidates = Schema.Number.pipe(Schema.int(), Schema.between(0, 511))
 export type Candidates = typeof Candidates.Type
 
 // =============================================================================
@@ -33,23 +25,17 @@ export class InvalidPuzzleError extends Schema.TaggedError<InvalidPuzzleError>()
   {
     message: Schema.String,
     cause: Schema.optional(Schema.String),
-  }
+  },
 ) {}
 
-export class GenerationError extends Schema.TaggedError<GenerationError>()(
-  "GenerationError",
-  {
-    message: Schema.String,
-    difficulty: Schema.optional(Schema.String),
-  }
-) {}
+export class GenerationError extends Schema.TaggedError<GenerationError>()("GenerationError", {
+  message: Schema.String,
+  difficulty: Schema.optional(Schema.String),
+}) {}
 
-export class SolveError extends Schema.TaggedError<SolveError>()(
-  "SolveError",
-  {
-    message: Schema.String,
-  }
-) {}
+export class SolveError extends Schema.TaggedError<SolveError>()("SolveError", {
+  message: Schema.String,
+}) {}
 
 // =============================================================================
 // Solution Types
