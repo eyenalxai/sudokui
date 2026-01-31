@@ -174,9 +174,13 @@ export const calculateBoardDifficulty = (
 
 /* cloneBoard
  * --------------
- *  Deep clones an InternalBoard using structuredClone
- *  Native, type-safe, and faster than JSON parse/stringify
+ *  Deep clones an InternalBoard using JSON serialize/parse
+ *  Matches sudoku-core behavior for consistent solving steps
  * -----------------------------------------------------------------*/
 export const cloneBoard = (board: InternalBoard): InternalBoard => {
-  return structuredClone(board)
+  return board.map((cell) => ({
+    value: cell.value,
+    candidates: cell.candidates.slice(),
+    ...(cell.invalidCandidates ? { invalidCandidates: cell.invalidCandidates.slice() } : {}),
+  }))
 }

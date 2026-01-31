@@ -11,13 +11,13 @@ import {
 } from "./constants"
 import { createSudokuInstance } from "./sudoku-service"
 import { isUniqueSolution } from "./sudoku-solver"
+import { EASY_SUDOKU_BOARD_FOR_TEST } from "./test-boards-easy"
 import {
-  EASY_SUDOKU_BOARD_FOR_TEST,
   EXPERT_SUDOKU_BOARD_FOR_TEST,
   HARD_SUDOKU_BOARD_FOR_TEST,
   MASTER_SUDOKU_BOARD_FOR_TEST,
-  MEDIUM_SUDOKU_BOARD_FOR_TEST,
-} from "./test-constants"
+} from "./test-boards-hard"
+import { MEDIUM_SUDOKU_BOARD_FOR_TEST } from "./test-boards-medium"
 
 describe("sudoku-core", () => {
   describe("solve method", () => {

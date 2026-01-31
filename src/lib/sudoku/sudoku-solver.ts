@@ -28,14 +28,13 @@ function solveSudoku(board: Board): boolean {
   for (let i = 0; i < 81; i++) {
     if (board[i] === null) {
       for (let num = 1; num <= 9; num++) {
-        if (isValid(board, i, num)) {
-          board[i] = num
-          solveSudoku(board)
-          if (solutionCount > 1) {
-            return false
-          }
-          board[i] = null
+        if (!isValid(board, i, num)) continue
+        board[i] = num
+        solveSudoku(board)
+        if (solutionCount > 1) {
+          return false
         }
+        board[i] = null
       }
       return false
     }

@@ -1,0 +1,129 @@
+import type { CellValue, EliminationUpdate, House } from "../types"
+import type { StrategyHelpers } from "./strategy-helpers"
+
+type HiddenStrategyContext = {
+  groupOfHouses: Array<Array<House>>
+  boardSize: number
+  contains: (candidates: Array<CellValue>, digit: number) => boolean
+  helpers: StrategyHelpers
+}
+
+function countUniqueCells(
+  possibleCells: Array<number>,
+  combineInfo: Array<{ candidate: number; cells: Array<number> }>,
+): number {
+  const tempSet = new Set(possibleCells)
+  for (let a = 0; a < combineInfo.length; a++) {
+    const cells = combineInfo[a]!.cells
+    for (let b = 0; b < cells.length; b++) {
+      tempSet.add(cells[b]!)
+    }
+  }
+  return tempSet.size
+}
+
+export function createHiddenStrategies({
+  groupOfHouses,
+  boardSize,
+  contains,
+  helpers,
+}: HiddenStrategyContext) {
+  const { getRemainingNumbers, getPossibleCellsForCandidate, removeCandidatesFromMultipleCells } =
+    helpers
+
+  function hiddenLockedCandidates(number: number) {
+    let combineInfo: Array<{
+      candidate: number
+      cells: Array<number>
+    }> = []
+    let minIndexes = [-1]
+    function checkLockedCandidates(house: House, startIndex: number): EliminationUpdate[] | false {
+      for (
+        let i = Math.max(startIndex, minIndexes[startIndex]!);
+        i <= boardSize - number + startIndex;
+        i++
+      ) {
+        minIndexes[startIndex] = i + 1
+        minIndexes[startIndex + 1] = i + 1
+
+        const candidate = i + 1
+
+        const possibleCells = getPossibleCellsForCandidate(candidate, house)
+
+        if (possibleCells.length === 0 || possibleCells.length > number) continue
+
+        if (combineInfo.length > 0) {
+          const uniqueCellCount = countUniqueCells(possibleCells, combineInfo)
+          if (uniqueCellCount > number) {
+            continue //combined candidates spread over > n cells, won't work
+          }
+        }
+
+        combineInfo.push({ candidate: candidate, cells: possibleCells })
+
+        if (startIndex < number - 1) {
+          const r = checkLockedCandidates(house, startIndex + 1)
+          if (r !== false) return r
+        }
+
+        if (combineInfo.length === number) {
+          const combinedCandidates = [] //not unique now...
+          let cellsWithCandidates: number[] = [] //not unique either..
+          for (let x = 0; x < combineInfo.length; x++) {
+            combinedCandidates.push(combineInfo[x]!.candidate)
+            cellsWithCandidates = cellsWithCandidates.concat(combineInfo[x]!.cells)
+          }
+
+          const candidatesToRemove = []
+          for (let c = 0; c < boardSize; c++) {
+            if (!contains(combinedCandidates, c + 1)) candidatesToRemove.push(c + 1)
+          }
+
+          const cellsUpdated = removeCandidatesFromMultipleCells(
+            cellsWithCandidates,
+            candidatesToRemove,
+          )
+
+          if (cellsUpdated.length > 0) {
+            return cellsUpdated
+          }
+        }
+      }
+      if (startIndex > 0 && combineInfo.length > startIndex - 1) {
+        combineInfo.pop()
+      }
+      return false
+    }
+    const groupOfHousesLength = groupOfHouses.length
+    for (let i = 0; i < groupOfHousesLength; i++) {
+      for (let j = 0; j < boardSize; j++) {
+        const house = groupOfHouses[i]![j]!
+        if (getRemainingNumbers(house).length <= number) continue
+        combineInfo = []
+        minIndexes = [-1]
+
+        const result = checkLockedCandidates(house, 0)
+        if (result !== false) return result
+      }
+    }
+    return false //pattern not found
+  }
+
+  function hiddenPairStrategy(): EliminationUpdate[] | false {
+    return hiddenLockedCandidates(2)
+  }
+
+  function hiddenTripletStrategy(): EliminationUpdate[] | false {
+    return hiddenLockedCandidates(3)
+  }
+
+  function hiddenQuadrupleStrategy(): EliminationUpdate[] | false {
+    return hiddenLockedCandidates(4)
+  }
+
+  return {
+    hiddenPairStrategy,
+    hiddenTripletStrategy,
+    hiddenQuadrupleStrategy,
+  }
+}
