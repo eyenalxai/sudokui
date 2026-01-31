@@ -35,12 +35,18 @@ export function createSudokuInstance(options: Options = {}) {
   const { onError, onUpdate, onFinish, initBoard, difficulty = DIFFICULTY_MEDIUM } = options
 
   let board: InternalBoard = []
-
   let usedStrategies: Array<number> = []
 
   const resetCandidates = () => {
     board = Array.from({ length: BOARD_SIZE * BOARD_SIZE }, () => null).map((_, index) => {
-      const cell = board[index]!
+      const cell = board[index]
+      if (cell === undefined) {
+        return {
+          value: null,
+          candidates: CANDIDATES.slice(),
+          invalidCandidates: undefined,
+        }
+      }
       return {
         value: cell.value,
         candidates: cell.value === null ? CANDIDATES.slice() : cell.candidates,
@@ -48,7 +54,6 @@ export function createSudokuInstance(options: Options = {}) {
       }
     })
   }
-
   let strategies: Array<Strategy> = []
 
   const initializeBoard = () => {
@@ -68,7 +73,6 @@ export function createSudokuInstance(options: Options = {}) {
   const setBoardCells = (nextBoard: InternalBoard) => {
     board = nextBoard
   }
-
   const strategyHelpers = createStrategyHelpers({
     getBoard: getBoardCells,
     boardSize: BOARD_SIZE,
@@ -108,7 +112,6 @@ export function createSudokuInstance(options: Options = {}) {
     contains,
     helpers: strategyHelpers,
   })
-
   const {
     openSinglesStrategy,
     updateCandidatesBasedOnCellsValue,
@@ -118,7 +121,6 @@ export function createSudokuInstance(options: Options = {}) {
   const { pointingEliminationStrategy } = eliminationStrategies
   const { nakedPairStrategy, nakedTripletStrategy, nakedQuadrupleStrategy } = nakedStrategies
   const { hiddenPairStrategy, hiddenTripletStrategy, hiddenQuadrupleStrategy } = hiddenStrategies
-
   strategies = [
     {
       postFn: updateCandidatesBasedOnCellsValue,
@@ -207,9 +209,14 @@ export function createSudokuInstance(options: Options = {}) {
       }
       return false
     }
-    const effectedCells: boolean | -1 | Update[] = strategies[strategyIndex]!.fn()
+    const strategy = strategies[strategyIndex]
+    if (strategy === undefined) {
+      onError?.({ message: "No More Strategies To Solve The Board" })
+      return false
+    }
+    const effectedCells: boolean | -1 | Update[] = strategy.fn()
 
-    strategies[strategyIndex]!.postFn?.()
+    strategy.postFn?.()
 
     if (effectedCells === false) {
       if (strategies.length > strategyIndex + 1) {
@@ -227,16 +234,16 @@ export function createSudokuInstance(options: Options = {}) {
 
     if (!analyzeMode) {
       onUpdate?.({
-        strategy: strategies[strategyIndex]!.title,
+        strategy: strategy.title,
         updates: effectedCells,
-        type: strategies[strategyIndex]!.type,
+        type: strategy.type,
       })
     }
 
     usedStrategies[strategyIndex] ??= 0
 
     usedStrategies[strategyIndex] += 1
-    return strategies[strategyIndex]!.type
+    return strategy.type
   }
 
   const { analyzeBoard, solveStep, solveAll, getBoard } = createSudokuOperations({

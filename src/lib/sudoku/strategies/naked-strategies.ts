@@ -18,9 +18,13 @@ function buildCandidateSet(
 ): Set<CellValue> {
   const tempSet = new Set(initial)
   for (let a = 0; a < combineInfo.length; a++) {
-    const candidates = combineInfo[a]!.candidates
+    const info = combineInfo[a]
+    if (info === undefined) continue
+    const candidates = info.candidates
     for (let b = 0; b < candidates.length; b++) {
-      tempSet.add(candidates[b]!)
+      const candidate = candidates[b]
+      if (candidate === undefined) continue
+      tempSet.add(candidate)
     }
   }
   return tempSet
@@ -29,7 +33,9 @@ function buildCandidateSet(
 function collectCombineInfoCells(combineInfo: Array<CombineInfo>): number[] {
   const cells: number[] = []
   for (let x = 0; x < combineInfo.length; x++) {
-    cells.push(combineInfo[x]!.cell)
+    const info = combineInfo[x]
+    if (info === undefined) continue
+    cells.push(info.cell)
   }
   return cells
 }
@@ -37,9 +43,12 @@ function collectCombineInfoCells(combineInfo: Array<CombineInfo>): number[] {
 function collectCombineInfoCandidates(combineInfo: Array<CombineInfo>): Array<CellValue> {
   const combined: Array<CellValue> = []
   for (let x = 0; x < combineInfo.length; x++) {
-    const cands = combineInfo[x]!.candidates
+    const info = combineInfo[x]
+    if (info === undefined) continue
+    const cands = info.candidates
     for (let c = 0; c < cands.length; c++) {
-      const cand = cands[c]!
+      const cand = cands[c]
+      if (cand === undefined) continue
       if (cand !== null) {
         combined.push(cand)
       }
@@ -59,7 +68,10 @@ export function createNakedStrategies({ groupOfHouses, boardSize, helpers }: Nak
 
     for (let i = 0; i < groupOfHousesLength; i++) {
       for (let j = 0; j < boardSize; j++) {
-        const house = groupOfHouses[i]![j]!
+        const houseGroup = groupOfHouses[i]
+        if (houseGroup === undefined) continue
+        const house = houseGroup[j]
+        if (house === undefined) continue
 
         if (getRemainingNumbers(house).length <= number) {
           continue
@@ -82,15 +94,14 @@ export function createNakedStrategies({ groupOfHouses, boardSize, helpers }: Nak
       house: House,
       startIndex: number,
     ): EliminationUpdate[] | false {
-      for (
-        let i = Math.max(startIndex, minIndexes[startIndex]!);
-        i < boardSize - number + startIndex;
-        i++
-      ) {
+      const minIndex = minIndexes[startIndex]
+      if (minIndex === undefined) return false
+      for (let i = Math.max(startIndex, minIndex); i < boardSize - number + startIndex; i++) {
         minIndexes[startIndex] = i + 1
         minIndexes[startIndex + 1] = i + 1
 
-        const cell = house[i]!
+        const cell = house[i]
+        if (cell === undefined) continue
         const cellCandidates = getRemainingCandidates(cell)
 
         if (cellCandidates.length === 0 || cellCandidates.length > number) {

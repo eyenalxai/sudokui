@@ -41,8 +41,11 @@ export function createValueStrategies({
 
     for (let k = 0; k < boardSize; k++) {
       const boardIndex = house[k]
-      if (board[boardIndex!]!.value === null) {
-        emptyCells.push({ house: house, cellIndex: boardIndex! })
+      if (boardIndex === undefined) continue
+      const cell = board[boardIndex]
+      if (cell === undefined) continue
+      if (cell.value === null) {
+        emptyCells.push({ house: house, cellIndex: boardIndex })
         if (emptyCells.length > 1) {
           break
         }
@@ -65,8 +68,13 @@ export function createValueStrategies({
       return -1
     }
 
-    addValueToCellIndex(board, emptyCell.cellIndex, value[0]!) //does not update UI
-    return [{ index: emptyCell.cellIndex, filledValue: value[0]! }]
+    const filledValue = value[0]
+    if (filledValue === undefined) {
+      onError?.({ message: "Board Incorrect" })
+      return -1
+    }
+    addValueToCellIndex(board, emptyCell.cellIndex, filledValue) //does not update UI
+    return [{ index: emptyCell.cellIndex, filledValue }]
   }
 
   function openSinglesStrategy(): ValueUpdate[] | false {
@@ -74,7 +82,11 @@ export function createValueStrategies({
 
     for (let i = 0; i < groupOfHouses.length; i++) {
       for (let j = 0; j < boardSize; j++) {
-        const singleEmptyCell = findSingleEmptyCellInHouse(groupOfHouses[i]![j]!)
+        const houseGroup = groupOfHouses[i]
+        if (houseGroup === undefined) continue
+        const house = houseGroup[j]
+        if (house === undefined) continue
+        const singleEmptyCell = findSingleEmptyCellInHouse(house)
 
         if (singleEmptyCell) {
           const result = fillSingleEmptyCell(singleEmptyCell)
@@ -99,13 +111,19 @@ export function createValueStrategies({
 
     for (let houseType = 0; houseType < groupOfHousesLength; houseType++) {
       for (let houseIndex = 0; houseIndex < boardSize; houseIndex++) {
-        const house = groupOfHouses[houseType]![houseIndex]!
+        const houseGroup = groupOfHouses[houseType]
+        if (houseGroup === undefined) continue
+        const house = houseGroup[houseIndex]
+        if (house === undefined) continue
         const candidatesToRemove = getUsedNumbers(house)
 
         for (let cellIndex = 0; cellIndex < boardSize; cellIndex++) {
-          const cell = board[house[cellIndex]!]
-          cell!.candidates = cell!.candidates.filter(
-            (candidate) => !candidatesToRemove.includes(candidate),
+          const houseCellIndex = house[cellIndex]
+          if (houseCellIndex === undefined) continue
+          const cell = board[houseCellIndex]
+          if (cell === undefined) continue
+          cell.candidates = cell.candidates.filter(
+            (candidate) => candidate === null || !candidatesToRemove.includes(candidate),
           )
         }
       }
@@ -118,9 +136,11 @@ export function createValueStrategies({
     const board = getBoard()
     let match: number | null = null
     for (let cellIndex = 0; cellIndex < boardSize; cellIndex++) {
-      const cell = house[cellIndex]!
+      const cell = house[cellIndex]
+      if (cell === undefined) continue
       const boardCell = board[cell]
-      if (!contains(boardCell!.candidates, digit)) continue
+      if (boardCell === undefined) continue
+      if (!contains(boardCell.candidates, digit)) continue
       if (match !== null) {
         return null
       }
@@ -135,11 +155,15 @@ export function createValueStrategies({
 
     for (let houseType = 0; houseType < groupOfHousesLength; houseType++) {
       for (let houseIndex = 0; houseIndex < boardSize; houseIndex++) {
-        const house = groupOfHouses[houseType]![houseIndex]!
+        const houseGroup = groupOfHouses[houseType]
+        if (houseGroup === undefined) continue
+        const house = houseGroup[houseIndex]
+        if (house === undefined) continue
         const digits = getRemainingNumbers(house)
 
         for (let digitIndex = 0; digitIndex < digits.length; digitIndex++) {
-          const digit = digits[digitIndex]!
+          const digit = digits[digitIndex]
+          if (digit === undefined) continue
           const cellIndex = findSingleCandidateCellForDigit(house, digit)
           if (cellIndex !== null) {
             addValueToCellIndex(board, cellIndex, digit)
@@ -157,11 +181,13 @@ export function createValueStrategies({
     const board = getBoard()
     for (let cellIndex = 0; cellIndex < board.length; cellIndex++) {
       const cell = board[cellIndex]
-      const candidates = cell!.candidates
+      if (cell === undefined) continue
+      const candidates = cell.candidates
 
-      const possibleCandidates: CellValue[] = []
+      const possibleCandidates: number[] = []
       for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
-        const candidateValue = candidates[candidateIndex]!
+        const candidateValue = candidates[candidateIndex]
+        if (candidateValue === undefined) continue
         if (candidateValue !== null) {
           possibleCandidates.push(candidateValue)
         }
@@ -172,7 +198,8 @@ export function createValueStrategies({
       }
 
       if (possibleCandidates.length === 1) {
-        const digit = possibleCandidates[0]!
+        const digit = possibleCandidates[0]
+        if (digit === undefined) continue
 
         addValueToCellIndex(board, cellIndex, digit)
 

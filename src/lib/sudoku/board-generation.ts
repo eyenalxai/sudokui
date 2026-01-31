@@ -38,31 +38,46 @@ export function createBoardGenerator({
   const setBoardCellWithRandomCandidate = (cellIndex: number) => {
     updateCandidatesBasedOnCellsValue()
     const board = getBoardCells()
-    const invalids = board[cellIndex]!.invalidCandidates ?? []
-    const candidates = board[cellIndex]!.candidates.filter(
+    const cell = board[cellIndex]
+    if (cell === undefined) {
+      return false
+    }
+    const invalids = cell.invalidCandidates ?? []
+    const candidates = cell.candidates.filter(
       (candidate): candidate is number => candidate !== null && !invalids.includes(candidate),
     )
     if (candidates.length === 0) {
       return false
     }
     const value = getRandomCandidateOfCell(candidates)
-    addValueToCellIndex(board, cellIndex, value!)
+    if (value === undefined) {
+      return false
+    }
+    addValueToCellIndex(board, cellIndex, value)
     return true
   }
 
   const invalidPreviousCandidateAndStartOver = (cellIndex: number) => {
     const board = getBoardCells()
     const previousIndex = cellIndex - 1
-    board[previousIndex]!.invalidCandidates = board[previousIndex]!.invalidCandidates ?? []
+    const previousCell = board[previousIndex]
+    if (previousCell === undefined) {
+      return
+    }
+    previousCell.invalidCandidates = previousCell.invalidCandidates ?? []
 
-    const prevValue = board[previousIndex]!.value
+    const prevValue = previousCell.value
     if (prevValue !== null) {
-      board[previousIndex]!.invalidCandidates?.push(prevValue)
+      previousCell.invalidCandidates?.push(prevValue)
     }
 
     addValueToCellIndex(board, previousIndex, null)
     resetCandidates()
-    board[cellIndex]!.invalidCandidates = []
+    const currentCell = board[cellIndex]
+    if (currentCell === undefined) {
+      return
+    }
+    currentCell.invalidCandidates = []
     generateBoardAnswerRecursively(previousIndex)
   }
 
@@ -96,8 +111,11 @@ export function createBoardGenerator({
     let removalCount = getRemovalCountBasedOnDifficulty(difficulty)
     while (removalCount > 0 && cells.length > 0) {
       const randIndex = Math.floor(Math.random() * cells.length)
-      const cellIndex = cells.splice(randIndex, 1)[0]!
-      const cellValue = board[cellIndex]!.value
+      const cellIndex = cells.splice(randIndex, 1)[0]
+      if (cellIndex === undefined) continue
+      const cell = board[cellIndex]
+      if (cell === undefined) continue
+      const cellValue = cell.value
       // Remove value from this cell
       addValueToCellIndex(board, cellIndex, null)
       // Reset candidates, only in model.

@@ -14,9 +14,13 @@ function countUniqueCells(
 ): number {
   const tempSet = new Set(possibleCells)
   for (let a = 0; a < combineInfo.length; a++) {
-    const cells = combineInfo[a]!.cells
+    const info = combineInfo[a]
+    if (info === undefined) continue
+    const cells = info.cells
     for (let b = 0; b < cells.length; b++) {
-      tempSet.add(cells[b]!)
+      const cell = cells[b]
+      if (cell === undefined) continue
+      tempSet.add(cell)
     }
   }
   return tempSet.size
@@ -38,11 +42,9 @@ export function createHiddenStrategies({
     }> = []
     let minIndexes = [-1]
     function checkLockedCandidates(house: House, startIndex: number): EliminationUpdate[] | false {
-      for (
-        let i = Math.max(startIndex, minIndexes[startIndex]!);
-        i <= boardSize - number + startIndex;
-        i++
-      ) {
+      const minIndex = minIndexes[startIndex]
+      if (minIndex === undefined) return false
+      for (let i = Math.max(startIndex, minIndex); i <= boardSize - number + startIndex; i++) {
         minIndexes[startIndex] = i + 1
         minIndexes[startIndex + 1] = i + 1
 
@@ -70,8 +72,10 @@ export function createHiddenStrategies({
           const combinedCandidates = [] //not unique now...
           let cellsWithCandidates: number[] = [] //not unique either..
           for (let x = 0; x < combineInfo.length; x++) {
-            combinedCandidates.push(combineInfo[x]!.candidate)
-            cellsWithCandidates = cellsWithCandidates.concat(combineInfo[x]!.cells)
+            const info = combineInfo[x]
+            if (info === undefined) continue
+            combinedCandidates.push(info.candidate)
+            cellsWithCandidates = cellsWithCandidates.concat(info.cells)
           }
 
           const candidatesToRemove = []
@@ -97,7 +101,10 @@ export function createHiddenStrategies({
     const groupOfHousesLength = groupOfHouses.length
     for (let i = 0; i < groupOfHousesLength; i++) {
       for (let j = 0; j < boardSize; j++) {
-        const house = groupOfHouses[i]![j]!
+        const houseGroup = groupOfHouses[i]
+        if (houseGroup === undefined) continue
+        const house = houseGroup[j]
+        if (house === undefined) continue
         if (getRemainingNumbers(house).length <= number) continue
         combineInfo = []
         minIndexes = [-1]

@@ -15,7 +15,11 @@ export function createStrategyHelpers({ getBoard, boardSize, candidates }: Strat
     const board = getBoard()
 
     for (let i = 0; i < cells.length; i++) {
-      const cellCandidates = board[cells[i]!]!.candidates
+      const cellIndex = cells[i]
+      if (cellIndex === undefined) continue
+      const cell = board[cellIndex]
+      if (cell === undefined) continue
+      const cellCandidates = cell.candidates
 
       for (let j = 0; j < candidatesToRemove.length; j++) {
         const candidate = candidatesToRemove[j]
@@ -27,7 +31,7 @@ export function createStrategyHelpers({ getBoard, boardSize, candidates }: Strat
         ) {
           cellCandidates[candidate - 1] = null //NOTE: also deletes them from board variable
           cellsUpdated.push({
-            index: cells[i]!,
+            index: cellIndex,
             eliminatedCandidate: candidate,
           }) //will push same cell multiple times
         }
@@ -55,8 +59,18 @@ export function createStrategyHelpers({ getBoard, boardSize, candidates }: Strat
 
   const getUsedNumbers = (house: House) => {
     const board = getBoard()
+    const usedNumbers: number[] = []
     // filter out cells that have values
-    return house.map((cellIndex) => board[cellIndex]!.value).filter(Boolean)
+    for (let i = 0; i < house.length; i++) {
+      const cellIndex = house[i]
+      if (cellIndex === undefined) continue
+      const cell = board[cellIndex]
+      if (cell === undefined) continue
+      if (cell.value !== null) {
+        usedNumbers.push(cell.value)
+      }
+    }
+    return usedNumbers
   }
 
   const getRemainingNumbers = (house: House): Array<number> => {
@@ -66,12 +80,17 @@ export function createStrategyHelpers({ getBoard, boardSize, candidates }: Strat
 
   const getRemainingCandidates = (cellIndex: number): Array<CellValue> => {
     const board = getBoard()
-    return board[cellIndex]!.candidates.filter((candidate) => candidate !== null)
+    const cell = board[cellIndex]
+    if (cell === undefined) return []
+    return cell.candidates.filter((candidate) => candidate !== null)
   }
 
   const getPossibleCellsForCandidate = (candidate: number, house: House) => {
     const board = getBoard()
-    return house.filter((cellIndex) => board[cellIndex]!.candidates.includes(candidate))
+    return house.filter((cellIndex) => {
+      const cell = board[cellIndex]
+      return cell !== undefined && cell.candidates.includes(candidate)
+    })
   }
 
   return {

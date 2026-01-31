@@ -22,7 +22,11 @@ export const contains = (array: Array<unknown>, object: unknown) => {
 
 export const uniqueArray = (array: Array<number>): Array<number> => {
   const temp: Record<number, unknown> = {}
-  for (let i = 0; i < array.length; i++) temp[array[i]!] = true
+  for (let i = 0; i < array.length; i++) {
+    const value = array[i]
+    if (value === undefined) continue
+    temp[value] = true
+  }
   const record: number[] = []
   for (const k in temp) record.push(Number(k))
   return record
@@ -51,17 +55,21 @@ export const generateHouseIndexList = (boardSize: number): Houses[] => {
         }
       }
     }
-    groupOfHouses[0]!.push(horizontalRow)
-    groupOfHouses[1]!.push(verticalRow)
-    groupOfHouses[2]!.push(box)
+    const horizontalGroup = groupOfHouses[0]
+    const verticalGroup = groupOfHouses[1]
+    const boxGroup = groupOfHouses[2]
+    if (horizontalGroup) horizontalGroup.push(horizontalRow)
+    if (verticalGroup) verticalGroup.push(verticalRow)
+    if (boxGroup) boxGroup.push(box)
   }
   return groupOfHouses
 }
 
 export const isBoardFinished = (board: InternalBoard): boolean => {
-  return Array.from({ length: BOARD_SIZE * BOARD_SIZE }, () => null).every(
-    (_, i) => board[i]!.value !== null,
-  )
+  return Array.from({ length: BOARD_SIZE * BOARD_SIZE }, () => null).every((_, i) => {
+    const cell = board[i]
+    return cell !== undefined && cell.value !== null
+  })
 }
 
 export const isEasyEnough = (difficulty: Difficulty, currentDifficulty: Difficulty): boolean => {
@@ -131,9 +139,11 @@ export const getRemovalCountBasedOnDifficulty = (difficulty: Difficulty) => {
 /* addValueToCellIndex - does not update UI
           -----------------------------------------------------------------*/
 export const addValueToCellIndex = (board: InternalBoard, cellIndex: number, value: CellValue) => {
-  board[cellIndex]!.value = value
+  const cell = board[cellIndex]
+  if (cell === undefined) return
+  cell.value = value
   if (value !== null) {
-    board[cellIndex]!.candidates = NULL_CANDIDATE_LIST.slice()
+    cell.candidates = NULL_CANDIDATE_LIST.slice()
   }
 }
 
@@ -153,7 +163,8 @@ export const calculateBoardDifficulty = (
 ): { difficulty: Difficulty; score: number } => {
   const validUsedStrategies = usedStrategies.filter(Boolean)
   const totalScore = validUsedStrategies.reduce((accumulatedScore, frequency, i) => {
-    const strategy = strategies[i]!
+    const strategy = strategies[i]
+    if (strategy === undefined) return accumulatedScore
     return accumulatedScore + frequency * strategy.score
   }, 0)
   let difficulty: Difficulty =
