@@ -3,13 +3,11 @@ type Board = (number | null)[]
 function isValid(board: Board, index: number, num: number): boolean {
   const row = Math.floor(index / 9)
   const col = index % 9
-  // Check if number already exists in row or column
   for (let i = 0; i < 9; i++) {
     if (board[row * 9 + i] === num || board[col + 9 * i] === num) {
       return false
     }
   }
-  // Check if number already exists in 3x3 box
   const startRow = row - (row % 3)
   const startCol = col - (col % 3)
   for (let i = 0; i < 3; i++) {

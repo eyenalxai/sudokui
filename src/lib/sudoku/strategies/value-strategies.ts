@@ -50,7 +50,6 @@ export function createValueStrategies({
       }
     }
 
-    // If only one empty cell found
     return emptyCells.length === 1 ? emptyCells[0] : null
   }
 
@@ -166,7 +165,7 @@ export function createValueStrategies({
           if (cellIndex !== null) {
             addValueToCellIndex(board, cellIndex, digit)
 
-            return [{ index: cellIndex, filledValue: digit }] // one step at a time
+            return [{ index: cellIndex, filledValue: digit }]
           }
         }
       }
@@ -191,7 +190,7 @@ export function createValueStrategies({
         }
 
         if (possibleCandidates.length > 1) {
-          break // can't find answer here
+          break
         }
       }
 
@@ -201,7 +200,7 @@ export function createValueStrategies({
 
         addValueToCellIndex(board, cellIndex, digit)
 
-        return [{ index: cellIndex, filledValue: digit }] // one step at a time
+        return [{ index: cellIndex, filledValue: digit }]
       }
     }
 

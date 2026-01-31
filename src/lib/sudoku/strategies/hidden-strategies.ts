@@ -66,8 +66,8 @@ export function createHiddenStrategies({
         }
 
         if (combineInfo.length === number) {
-          const combinedCandidates = [] //not unique now...
-          let cellsWithCandidates: number[] = [] //not unique either..
+          const combinedCandidates = []
+          let cellsWithCandidates: number[] = []
           for (let x = 0; x < combineInfo.length; x++) {
             const info = combineInfo[x]
             if (info === undefined) continue
@@ -108,7 +108,7 @@ export function createHiddenStrategies({
         if (result !== false) return result
       }
     }
-    return false //pattern not found
+    return false
   }
 
   function hiddenPairStrategy(): EliminationUpdate[] | false {

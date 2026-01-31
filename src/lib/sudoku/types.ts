@@ -73,9 +73,7 @@ export interface Options {
   difficulty?: Difficulty
 }
 
-// we call row, column, and box a house
 export type House = Array<number>
-// rows, columns, and boxes
 export type Houses = Array<House>
 
 export type AnalyzeData = {

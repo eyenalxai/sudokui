@@ -28,8 +28,8 @@ export const generateHouseIndexList = (boardSize: number): Houses[] => {
   const groupOfHouses: Houses[] = [[], [], []]
   const boxSideSize = Math.sqrt(boardSize)
   for (let i = 0; i < boardSize; i++) {
-    const horizontalRow = [] //horizontal row
-    const verticalRow = [] //vertical row
+    const horizontalRow = []
+    const verticalRow = []
     const box = []
     for (let j = 0; j < boardSize; j++) {
       horizontalRow.push(boardSize * i + j)
@@ -39,7 +39,7 @@ export const generateHouseIndexList = (boardSize: number): Houses[] => {
         for (let k = 0; k < boxSideSize; k++) {
           const a = Math.floor(i / boxSideSize) * boardSize * boxSideSize
           const b = (i % boxSideSize) * boxSideSize
-          const boxStartIndex = a + b //0 3 6 27 30 33 54 57 60
+          const boxStartIndex = a + b
 
           box.push(boxStartIndex + boardSize * j + k)
         }

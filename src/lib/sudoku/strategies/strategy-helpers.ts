@@ -43,13 +43,10 @@ export function createStrategyHelpers({ getBoard, boardSize, candidates }: Strat
   const housesWithCell = (cellIndex: number) => {
     const boxSideSize = Math.sqrt(boardSize)
     const groupOfHouses = []
-    //horizontal row
     const horizontalRow = Math.floor(cellIndex / boardSize)
     groupOfHouses.push(horizontalRow)
-    //vertical row
     const verticalRow = Math.floor(cellIndex % boardSize)
     groupOfHouses.push(verticalRow)
-    //box
     const box =
       Math.floor(horizontalRow / boxSideSize) * boxSideSize + Math.floor(verticalRow / boxSideSize)
     groupOfHouses.push(box)
@@ -60,7 +57,6 @@ export function createStrategyHelpers({ getBoard, boardSize, candidates }: Strat
   const getUsedNumbers = (house: House) => {
     const board = getBoard()
     const usedNumbers: number[] = []
-    // filter out cells that have values
     for (let i = 0; i < house.length; i++) {
       const cellIndex = house[i]
       if (cellIndex === undefined) continue

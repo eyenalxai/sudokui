@@ -31,7 +31,6 @@ describe("sudoku-core", () => {
 
     for (const [difficulty, sudokuBoard] of items) {
       it(`should solve the ${difficulty} board`, () => {
-        //Arrange
         const emptyCellsLength = sudokuBoard.filter((cell) => cell === null).length
         const solvingSteps: {
           strategy: string
@@ -39,7 +38,6 @@ describe("sudoku-core", () => {
           updates: { index: number; filledValue?: number; eliminatedCandidate?: number }[]
         }[] = []
 
-        //Act
         const { solveAll } = createSudokuInstance({
           initBoard: sudokuBoard.slice() as Board,
           onUpdate: (solvingStep) => solvingSteps.push(solvingStep),
@@ -47,7 +45,6 @@ describe("sudoku-core", () => {
 
         const solvedBoard = solveAll()
 
-        // Assert
         const filledCellsLength =
           solvingSteps.reduce(
             (acc, curr) => (curr.type === "value" ? curr.updates.length + acc : acc),
@@ -71,7 +68,6 @@ describe("sudoku-core", () => {
 
     for (const [difficulty, sudokuBoard] of items) {
       it(`should give a hint for the ${difficulty} board`, () => {
-        //Arrange
         const solvingSteps: {
           strategy: string
           type: string
@@ -82,10 +78,8 @@ describe("sudoku-core", () => {
           onUpdate: (solvingStep) => solvingSteps.push(solvingStep),
         })
 
-        //Act
         const solvedBoard = solveStep()
 
-        // Assert
         const filledCellsLength =
           solvingSteps.reduce(
             (acc, curr) => (curr.type === "value" ? curr.updates.length + acc : acc),
@@ -100,91 +94,73 @@ describe("sudoku-core", () => {
 
   describe("analyze method", () => {
     it("should invalidate the wrong board", () => {
-      //Arrange
       const sudokuBoard = [1]
       const { analyzeBoard } = createSudokuInstance({
         initBoard: sudokuBoard as Board,
       })
 
-      //Act
       const { difficulty, hasSolution } = analyzeBoard()
 
-      // Assert
       expect(difficulty).toBe(undefined)
       expect(hasSolution).toBe(false)
     })
 
     it("should validate the easy board", () => {
-      //Arrange
       const sudokuBoard = [...EASY_SUDOKU_BOARD_FOR_TEST] as Board
       const { analyzeBoard } = createSudokuInstance({
         initBoard: sudokuBoard,
       })
 
-      //Act
       const { difficulty } = analyzeBoard()
 
-      // Assert
       expect(difficulty).toBe("easy")
       expect(isUniqueSolution(sudokuBoard)).toBe(true)
     })
 
     it("should validate the medium board", () => {
-      //Arrange
       const sudokuBoard = [...MEDIUM_SUDOKU_BOARD_FOR_TEST] as Board
       const { analyzeBoard } = createSudokuInstance({
         initBoard: sudokuBoard,
       })
 
-      //Act
       const { difficulty } = analyzeBoard()
 
-      // Assert
       expect(difficulty).toBe("medium")
       expect(isUniqueSolution(sudokuBoard)).toBe(true)
     })
 
     it("should validate the hard board", () => {
-      //Arrange
       const sudokuBoard = [...HARD_SUDOKU_BOARD_FOR_TEST] as Board
       const { analyzeBoard } = createSudokuInstance({
         initBoard: sudokuBoard,
       })
 
-      //Act
       const { difficulty } = analyzeBoard()
 
-      // Assert
       expect(difficulty).toBe("hard")
       expect(isUniqueSolution(sudokuBoard)).toBe(true)
     })
 
     it("should validate the expert board", () => {
-      //Arrange
       const sudokuBoard = [...EXPERT_SUDOKU_BOARD_FOR_TEST] as Board
       const { analyzeBoard } = createSudokuInstance({
         initBoard: sudokuBoard,
       })
 
-      //Act
       const { difficulty } = analyzeBoard()
 
-      // Assert
       expect(difficulty).toBe("expert")
       expect(isUniqueSolution(sudokuBoard)).toBe(true)
     })
 
     it("should validate the master board", () => {
-      //Arrange
       const sudokuBoard = [...MASTER_SUDOKU_BOARD_FOR_TEST] as Board
       const { analyzeBoard } = createSudokuInstance({
         initBoard: sudokuBoard,
       })
 
-      //Act
       const { difficulty } = analyzeBoard()
 
-      // Assert
       expect(difficulty).toBe("master")
       expect(isUniqueSolution(sudokuBoard)).toBe(true)
     })
