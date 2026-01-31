@@ -1,4 +1,4 @@
-import type { CellValue, EliminationUpdate, House, Option, StrategyResult } from "../types"
+import type { EliminationUpdate, House, Option, StrategyResult } from "../types"
 import type { StrategyHelpers } from "./strategy-helpers"
 
 type NakedStrategyContext = {
@@ -9,13 +9,10 @@ type NakedStrategyContext = {
 
 type CombineInfo = {
   cell: number
-  candidates: Array<CellValue>
+  candidates: Array<number>
 }
 
-function buildCandidateSet(
-  initial: Array<CellValue>,
-  combineInfo: Array<CombineInfo>,
-): Set<CellValue> {
+function buildCandidateSet(initial: Array<number>, combineInfo: Array<CombineInfo>): Set<number> {
   const tempSet = new Set(initial)
   for (let a = 0; a < combineInfo.length; a++) {
     const info = combineInfo[a]
@@ -40,8 +37,8 @@ function collectCombineInfoCells(combineInfo: Array<CombineInfo>): number[] {
   return cells
 }
 
-function collectCombineInfoCandidates(combineInfo: Array<CombineInfo>): Array<CellValue> {
-  const combined = new Set<CellValue>()
+function collectCombineInfoCandidates(combineInfo: Array<CombineInfo>): Array<number> {
+  const combined = new Set<number>()
   for (let x = 0; x < combineInfo.length; x++) {
     const info = combineInfo[x]
     if (info === undefined) continue
@@ -49,9 +46,7 @@ function collectCombineInfoCandidates(combineInfo: Array<CombineInfo>): Array<Ce
     for (let c = 0; c < cands.length; c++) {
       const cand = cands[c]
       if (cand === undefined) continue
-      if (cand !== null) {
-        combined.add(cand)
-      }
+      combined.add(cand)
     }
   }
   return Array.from(combined)

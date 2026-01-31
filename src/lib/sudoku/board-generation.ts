@@ -16,7 +16,7 @@ type BoardGenerationContext = {
   updateCandidatesBasedOnCellsValue: () => StrategyResult
   resetCandidates: () => void
   addValueToCellIndex: (board: InternalBoard, cellIndex: number, value: CellValue) => void
-  getRandomCandidateOfCell: (candidates: Array<CellValue>) => CellValue | undefined
+  getRandomCandidateOfCell: (candidates: Array<number>) => number | undefined
   cloneBoard: (board: InternalBoard) => InternalBoard
   analyzeBoard: () => AnalyzeData
   isUniqueSolution: (board: Board) => boolean
@@ -51,8 +51,8 @@ export function createBoardGenerator({
       return false
     }
     const invalids = cell.invalidCandidates ?? []
-    const candidates = cell.candidates.filter(
-      (candidate): candidate is number => candidate !== null && !invalids.includes(candidate),
+    const candidates = Array.from(cell.candidates).filter(
+      (candidate) => !invalids.includes(candidate),
     )
     if (candidates.length === 0) {
       return false
@@ -70,7 +70,7 @@ export function createBoardGenerator({
     const previousIndex = cellIndex - 1
     const previousCell = board[previousIndex]
     if (previousCell === undefined) {
-      return
+      return false
     }
     previousCell.invalidCandidates = previousCell.invalidCandidates ?? []
 
@@ -83,13 +83,13 @@ export function createBoardGenerator({
     resetCandidates()
     const currentCell = board[cellIndex]
     if (currentCell === undefined) {
-      return
+      return false
     }
     currentCell.invalidCandidates = []
-    generateBoardAnswerRecursively(previousIndex)
+    return generateBoardAnswerRecursively(previousIndex)
   }
 
-  const generateBoardAnswerRecursively = (cellIndex: number) => {
+  const generateBoardAnswerRecursively = (cellIndex: number): boolean => {
     if (cellIndex + 1 > boardSize * boardSize) {
       const board = getBoardCells()
       for (const cell of board) {
@@ -98,10 +98,9 @@ export function createBoardGenerator({
       return true
     }
     if (setBoardCellWithRandomCandidate(cellIndex)) {
-      generateBoardAnswerRecursively(cellIndex + 1)
-    } else {
-      invalidPreviousCandidateAndStartOver(cellIndex)
+      return generateBoardAnswerRecursively(cellIndex + 1)
     }
+    return invalidPreviousCandidateAndStartOver(cellIndex)
   }
 
   function isValidAndEasyEnough(analysis: AnalyzeData, difficultyLevel: Difficulty): boolean {

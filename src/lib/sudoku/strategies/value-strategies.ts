@@ -120,9 +120,10 @@ export function createValueStrategies({
           if (houseCellIndex === undefined) continue
           const cell = board[houseCellIndex]
           if (cell === undefined) continue
-          cell.candidates = cell.candidates.filter(
-            (candidate) => candidate === null || !candidatesToRemove.includes(candidate),
-          )
+          if (cell.value !== null) continue
+          for (const candidate of candidatesToRemove) {
+            cell.candidates.delete(candidate)
+          }
         }
       }
     }
@@ -138,7 +139,7 @@ export function createValueStrategies({
       if (cell === undefined) continue
       const boardCell = board[cell]
       if (boardCell === undefined) continue
-      if (!boardCell.candidates.includes(digit)) continue
+      if (!boardCell.candidates.has(digit)) continue
       if (match !== null) {
         return null
       }
@@ -180,23 +181,9 @@ export function createValueStrategies({
     for (let cellIndex = 0; cellIndex < board.length; cellIndex++) {
       const cell = board[cellIndex]
       if (cell === undefined) continue
-      const candidates = cell.candidates
-
-      const possibleCandidates: number[] = []
-      for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
-        const candidateValue = candidates[candidateIndex]
-        if (candidateValue === undefined) continue
-        if (candidateValue !== null) {
-          possibleCandidates.push(candidateValue)
-        }
-
-        if (possibleCandidates.length > 1) {
-          break
-        }
-      }
-
-      if (possibleCandidates.length === 1) {
-        const digit = possibleCandidates[0]
+      if (cell.value !== null) continue
+      if (cell.candidates.size === 1) {
+        const digit = cell.candidates.values().next().value
         if (digit === undefined) continue
 
         addValueToCellIndex(board, cellIndex, digit)

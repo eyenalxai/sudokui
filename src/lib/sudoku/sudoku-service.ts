@@ -1,7 +1,7 @@
 import type { Board, InternalBoard, Strategy, Options, StrategyResult } from "./types"
 
 import { createBoardGenerator } from "./board-generation"
-import { DIFFICULTY_MEDIUM, BOARD_SIZE, CANDIDATES, NULL_CANDIDATE_LIST } from "./constants"
+import { DIFFICULTY_MEDIUM, BOARD_SIZE, CANDIDATES } from "./constants"
 import { createEliminationStrategies } from "./strategies/elimination-strategies"
 import { createHiddenStrategies } from "./strategies/hidden-strategies"
 import { createNakedStrategies } from "./strategies/naked-strategies"
@@ -42,13 +42,13 @@ export function createSudokuInstance(options: Options = {}) {
       if (cell === undefined) {
         return {
           value: null,
-          candidates: CANDIDATES.slice(),
+          candidates: new Set(CANDIDATES),
           invalidCandidates: undefined,
         }
       }
       return {
         value: cell.value,
-        candidates: cell.value === null ? CANDIDATES.slice() : cell.candidates,
+        candidates: cell.value === null ? new Set(CANDIDATES) : new Set(),
         invalidCandidates: cell.invalidCandidates,
       }
     })
@@ -61,7 +61,8 @@ export function createSudokuInstance(options: Options = {}) {
     if (!alreadyEnhanced) {
       board = Array.from({ length: BOARD_SIZE * BOARD_SIZE }, (_, index) => {
         const value = initBoard?.[index] ?? null
-        const candidates = value === null ? [...CANDIDATES] : [...NULL_CANDIDATE_LIST]
+        const candidates: Set<number> =
+          value === null ? new Set<number>(CANDIDATES) : new Set<number>()
 
         return { value, candidates }
       })
@@ -186,7 +187,8 @@ export function createSudokuInstance(options: Options = {}) {
   const convertInitialBoardToSerializedBoard = (_board: Board): InternalBoard => {
     return Array.from({ length: BOARD_SIZE * BOARD_SIZE }, () => null).map((_, i) => {
       const value = _board[i] ?? null
-      const candidates = value === null ? [...CANDIDATES] : [...NULL_CANDIDATE_LIST]
+      const candidates: Set<number> =
+        value === null ? new Set<number>(CANDIDATES) : new Set<number>()
 
       return { value, candidates }
     })

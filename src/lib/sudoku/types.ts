@@ -20,8 +20,8 @@ export type CellValue = number | null
 
 export type Cell = {
   value: CellValue
-  candidates: Array<CellValue>
-  invalidCandidates?: Array<CellValue>
+  candidates: Set<number>
+  invalidCandidates?: Array<number>
 }
 
 export type InternalBoard = Array<Cell>

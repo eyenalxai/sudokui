@@ -29,7 +29,7 @@ export function createEliminationStrategies({
       if (cell === undefined) continue
       const boardCell = board[cell]
       if (boardCell === undefined) continue
-      if (!boardCell.candidates.includes(digit)) continue
+      if (!boardCell.candidates.has(digit)) continue
 
       const cellHouses = housesWithCell(cell)
       const newHouseId = houseType === 2 ? cellHouses[0] : cellHouses[2]

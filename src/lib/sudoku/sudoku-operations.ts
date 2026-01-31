@@ -61,7 +61,10 @@ export function createSudokuOperations({
     }
 
     const initialBoard = getBoard().slice()
-    applySolvingStrategies({ analyzeMode })
+    const result = applySolvingStrategies({ analyzeMode })
+    if (result === false) {
+      return false
+    }
     const stepSolvedBoard = getBoard().slice()
 
     const boardNotChanged =
@@ -85,28 +88,32 @@ export function createSudokuOperations({
   }
 
   function analyzeBoard() {
-    let usedStrategiesClone = getUsedStrategies().slice()
-    let boardClone = cloneBoard(getBoardCells())
+    const usedStrategiesClone = getUsedStrategies().slice()
+    const boardClone = cloneBoard(getBoardCells())
 
     let Continue: false | "value" | "elimination" = "value"
-    while (Continue !== false) {
-      Continue = applySolvingStrategies({
-        strategyIndex: Continue === "elimination" ? 1 : 0,
-        analyzeMode: true,
-      })
-    }
-    const data: AnalyzeData = {
-      hasSolution: isBoardFinished(getBoardCells()),
-      usedStrategies: filterAndMapStrategies(getStrategies(), getUsedStrategies()),
-    }
+    let data: AnalyzeData = { hasSolution: false, usedStrategies: [] }
+    try {
+      while (Continue !== false) {
+        Continue = applySolvingStrategies({
+          strategyIndex: Continue === "elimination" ? 1 : 0,
+          analyzeMode: true,
+        })
+      }
+      data = {
+        hasSolution: isBoardFinished(getBoardCells()),
+        usedStrategies: filterAndMapStrategies(getStrategies(), getUsedStrategies()),
+      }
 
-    if (data.hasSolution) {
-      const boardDiff = calculateBoardDifficulty(getUsedStrategies(), getStrategies())
-      data.difficulty = boardDiff.difficulty
-      data.score = boardDiff.score
+      if (data.hasSolution) {
+        const boardDiff = calculateBoardDifficulty(getUsedStrategies(), getStrategies())
+        data.difficulty = boardDiff.difficulty
+        data.score = boardDiff.score
+      }
+    } finally {
+      setUsedStrategies(usedStrategiesClone.slice())
+      setBoardCells(boardClone)
     }
-    setUsedStrategies(usedStrategiesClone.slice())
-    setBoardCells(boardClone)
     return data
   }
 

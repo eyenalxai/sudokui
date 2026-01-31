@@ -2,25 +2,13 @@ import type { CellValue, Difficulty, Houses, InternalBoard, Strategy } from "./t
 
 import {
   BOARD_SIZE,
+  CANDIDATES,
   DIFFICULTY_EASY,
   DIFFICULTY_EXPERT,
   DIFFICULTY_HARD,
   DIFFICULTY_MASTER,
   DIFFICULTY_MEDIUM,
-  NULL_CANDIDATE_LIST,
 } from "./constants"
-
-export const uniqueArray = (array: Array<number>): Array<number> => {
-  const temp: Record<number, unknown> = {}
-  for (let i = 0; i < array.length; i++) {
-    const value = array[i]
-    if (value === undefined) continue
-    temp[value] = true
-  }
-  const record: number[] = []
-  for (const k in temp) record.push(Number(k))
-  return record
-}
 
 /* generateHouseIndexList
  * -----------------------------------------------------------------*/
@@ -60,51 +48,11 @@ export const isBoardFinished = (board: InternalBoard): boolean => {
 }
 
 export const isEasyEnough = (difficulty: Difficulty, currentDifficulty: Difficulty): boolean => {
-  switch (currentDifficulty) {
-    case DIFFICULTY_EASY:
-      return true
-    case DIFFICULTY_MEDIUM:
-      return difficulty !== DIFFICULTY_EASY
-    case DIFFICULTY_HARD:
-      return difficulty !== DIFFICULTY_EASY && difficulty !== DIFFICULTY_MEDIUM
-    case DIFFICULTY_EXPERT:
-      return (
-        difficulty !== DIFFICULTY_EASY &&
-        difficulty !== DIFFICULTY_MEDIUM &&
-        difficulty !== DIFFICULTY_HARD
-      )
-    case DIFFICULTY_MASTER:
-      return (
-        difficulty !== DIFFICULTY_EASY &&
-        difficulty !== DIFFICULTY_MEDIUM &&
-        difficulty !== DIFFICULTY_HARD &&
-        difficulty !== DIFFICULTY_EXPERT
-      )
-  }
+  return getDifficultyIndex(currentDifficulty) <= getDifficultyIndex(difficulty)
 }
 
 export const isHardEnough = (difficulty: Difficulty, currentDifficulty: Difficulty): boolean => {
-  switch (difficulty) {
-    case DIFFICULTY_EASY:
-      return true
-    case DIFFICULTY_MEDIUM:
-      return currentDifficulty !== DIFFICULTY_EASY
-    case DIFFICULTY_HARD:
-      return currentDifficulty !== DIFFICULTY_EASY && currentDifficulty !== DIFFICULTY_MEDIUM
-    case DIFFICULTY_EXPERT:
-      return (
-        currentDifficulty !== DIFFICULTY_EASY &&
-        currentDifficulty !== DIFFICULTY_MEDIUM &&
-        currentDifficulty !== DIFFICULTY_HARD
-      )
-    case DIFFICULTY_MASTER:
-      return (
-        currentDifficulty !== DIFFICULTY_EASY &&
-        currentDifficulty !== DIFFICULTY_MEDIUM &&
-        currentDifficulty !== DIFFICULTY_HARD &&
-        currentDifficulty !== DIFFICULTY_EXPERT
-      )
-  }
+  return getDifficultyIndex(currentDifficulty) >= getDifficultyIndex(difficulty)
 }
 
 export const getRemovalCountBasedOnDifficulty = (difficulty: Difficulty) => {
@@ -129,12 +77,10 @@ export const addValueToCellIndex = (board: InternalBoard, cellIndex: number, val
   const cell = board[cellIndex]
   if (cell === undefined) return
   cell.value = value
-  if (value !== null) {
-    cell.candidates = NULL_CANDIDATE_LIST.slice()
-  }
+  cell.candidates = value === null ? new Set(CANDIDATES) : new Set()
 }
 
-export const getRandomCandidateOfCell = (candidates: Array<CellValue>) => {
+export const getRandomCandidateOfCell = (candidates: Array<number>) => {
   const randomIndex = Math.floor(Math.random() * candidates.length)
   return candidates[randomIndex]
 }
@@ -179,7 +125,20 @@ export const calculateBoardDifficulty = (
 export const cloneBoard = (board: InternalBoard): InternalBoard => {
   return board.map((cell) => ({
     value: cell.value,
-    candidates: cell.candidates.slice(),
+    candidates: new Set(cell.candidates),
     ...(cell.invalidCandidates ? { invalidCandidates: cell.invalidCandidates.slice() } : {}),
   }))
+}
+
+const DIFFICULTY_ORDER = [
+  DIFFICULTY_EASY,
+  DIFFICULTY_MEDIUM,
+  DIFFICULTY_HARD,
+  DIFFICULTY_EXPERT,
+  DIFFICULTY_MASTER,
+] as const
+
+const getDifficultyIndex = (difficulty: Difficulty) => {
+  const index = DIFFICULTY_ORDER.indexOf(difficulty)
+  return index === -1 ? 0 : index
 }
