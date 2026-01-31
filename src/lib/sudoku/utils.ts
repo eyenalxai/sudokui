@@ -10,16 +10,6 @@ import {
   NULL_CANDIDATE_LIST,
 } from "./constants"
 
-//array contains function
-export const contains = (array: Array<unknown>, object: unknown) => {
-  for (let i = 0; i < array.length; i++) {
-    if (array[i] === object) {
-      return true
-    }
-  }
-  return false
-}
-
 export const uniqueArray = (array: Array<number>): Array<number> => {
   const temp: Record<number, unknown> = {}
   for (let i = 0; i < array.length; i++) {
@@ -66,10 +56,7 @@ export const generateHouseIndexList = (boardSize: number): Houses[] => {
 }
 
 export const isBoardFinished = (board: InternalBoard): boolean => {
-  return Array.from({ length: BOARD_SIZE * BOARD_SIZE }, () => null).every((_, i) => {
-    const cell = board[i]
-    return cell !== undefined && cell.value !== null
-  })
+  return board.every((cell) => cell !== undefined && cell.value !== null)
 }
 
 export const isEasyEnough = (difficulty: Difficulty, currentDifficulty: Difficulty): boolean => {
@@ -162,7 +149,8 @@ export const calculateBoardDifficulty = (
   strategies: Array<Strategy>,
 ): { difficulty: Difficulty; score: number } => {
   const validUsedStrategies = usedStrategies.filter(Boolean)
-  const totalScore = validUsedStrategies.reduce((accumulatedScore, frequency, i) => {
+  const totalScore = usedStrategies.reduce((accumulatedScore, frequency, i) => {
+    if (!frequency) return accumulatedScore
     const strategy = strategies[i]
     if (strategy === undefined) return accumulatedScore
     return accumulatedScore + frequency * strategy.score

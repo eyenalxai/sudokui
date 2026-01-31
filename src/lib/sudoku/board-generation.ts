@@ -35,6 +35,7 @@ export function createBoardGenerator({
   isEasyEnough,
   isHardEnough,
 }: BoardGenerationContext) {
+  const MAX_GENERATE_ATTEMPTS = 50
   const setBoardCellWithRandomCandidate = (cellIndex: number) => {
     updateCandidatesBasedOnCellsValue()
     const board = getBoardCells()
@@ -148,7 +149,10 @@ export function createBoardGenerator({
       setBoardCells(slicedBoard)
     }
 
-    while (isBoardTooEasy()) {
+    for (let attempt = 0; attempt < MAX_GENERATE_ATTEMPTS; attempt++) {
+      if (!isBoardTooEasy()) {
+        break
+      }
       restoreBoardAnswer()
     }
 

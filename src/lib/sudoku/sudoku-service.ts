@@ -13,7 +13,6 @@ import {
   addValueToCellIndex,
   calculateBoardDifficulty,
   cloneBoard,
-  contains,
   generateHouseIndexList,
   getRandomCandidateOfCell,
   getRemovalCountBasedOnDifficulty,
@@ -90,7 +89,6 @@ export function createSudokuInstance(options: Options = {}) {
     onError,
     onFinish,
     isBoardFinished,
-    contains,
     helpers: strategyHelpers,
   })
 
@@ -98,7 +96,6 @@ export function createSudokuInstance(options: Options = {}) {
     getBoard: getBoardCells,
     groupOfHouses: GROUP_OF_HOUSES,
     boardSize: BOARD_SIZE,
-    contains,
     helpers: strategyHelpers,
   })
   const nakedStrategies = createNakedStrategies({
@@ -109,7 +106,6 @@ export function createSudokuInstance(options: Options = {}) {
   const hiddenStrategies = createHiddenStrategies({
     groupOfHouses: GROUP_OF_HOUSES,
     boardSize: BOARD_SIZE,
-    contains,
     helpers: strategyHelpers,
   })
   const {

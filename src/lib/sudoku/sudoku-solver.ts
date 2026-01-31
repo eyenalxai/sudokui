@@ -22,32 +22,31 @@ function isValid(board: Board, index: number, num: number): boolean {
   return true
 }
 
-let solutionCount = 0
+export function isUniqueSolution(board: Board): boolean {
+  let solutionCount = 0
 
-function solveSudoku(board: Board): boolean {
-  for (let i = 0; i < 81; i++) {
-    if (board[i] === null) {
-      for (let num = 1; num <= 9; num++) {
-        if (!isValid(board, i, num)) continue
-        board[i] = num
-        solveSudoku(board)
-        if (solutionCount > 1) {
-          return false
+  function solveSudoku(boardToSolve: Board): boolean {
+    for (let i = 0; i < 81; i++) {
+      if (boardToSolve[i] === null) {
+        for (let num = 1; num <= 9; num++) {
+          if (!isValid(boardToSolve, i, num)) continue
+          boardToSolve[i] = num
+          solveSudoku(boardToSolve)
+          if (solutionCount > 1) {
+            return false
+          }
+          boardToSolve[i] = null
         }
-        board[i] = null
+        return false
       }
+    }
+    solutionCount++
+    if (solutionCount > 1) {
       return false
     }
+    return true
   }
-  solutionCount++
-  if (solutionCount > 1) {
-    return false
-  }
-  return true
-}
 
-export function isUniqueSolution(board: Board): boolean {
-  solutionCount = 0
   solveSudoku([...board])
   return solutionCount === 1
 }

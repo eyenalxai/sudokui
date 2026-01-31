@@ -100,17 +100,6 @@ export function createSudokuOperations({
     }
     setUsedStrategies(usedStrategiesClone.slice())
     setBoardCells(boardClone)
-
-    usedStrategiesClone = getUsedStrategies().slice()
-    boardClone = cloneBoard(getBoardCells())
-
-    let solvedBoard: false | Board = [...getBoard()]
-    while (solvedBoard !== false && !solvedBoard.every(Boolean)) {
-      solvedBoard = solveStep({ analyzeMode: true, iterationCount: 0 })
-    }
-
-    setUsedStrategies(usedStrategiesClone.slice())
-    setBoardCells(boardClone)
     return data
   }
 

@@ -1,11 +1,10 @@
-import type { CellValue, EliminationUpdate, House, InternalBoard } from "../types"
+import type { EliminationUpdate, House, InternalBoard } from "../types"
 import type { StrategyHelpers } from "./strategy-helpers"
 
 type EliminationStrategyContext = {
   getBoard: () => InternalBoard
   groupOfHouses: Array<Array<House>>
   boardSize: number
-  contains: (candidates: Array<CellValue>, digit: number) => boolean
   helpers: StrategyHelpers
 }
 
@@ -13,7 +12,6 @@ export function createEliminationStrategies({
   getBoard,
   groupOfHouses,
   boardSize,
-  contains,
   helpers,
 }: EliminationStrategyContext) {
   const { getRemainingNumbers, housesWithCell, removeCandidatesFromMultipleCells } = helpers
@@ -31,7 +29,7 @@ export function createEliminationStrategies({
       if (cell === undefined) continue
       const boardCell = board[cell]
       if (boardCell === undefined) continue
-      if (!contains(boardCell.candidates, digit)) continue
+      if (!boardCell.candidates.includes(digit)) continue
 
       const cellHouses = housesWithCell(cell)
       const newHouseId = houseType === 2 ? cellHouses[0] : cellHouses[2]

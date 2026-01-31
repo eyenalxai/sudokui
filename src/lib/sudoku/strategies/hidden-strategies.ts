@@ -1,10 +1,9 @@
-import type { CellValue, EliminationUpdate, House } from "../types"
+import type { EliminationUpdate, House } from "../types"
 import type { StrategyHelpers } from "./strategy-helpers"
 
 type HiddenStrategyContext = {
   groupOfHouses: Array<Array<House>>
   boardSize: number
-  contains: (candidates: Array<CellValue>, digit: number) => boolean
   helpers: StrategyHelpers
 }
 
@@ -29,7 +28,6 @@ function countUniqueCells(
 export function createHiddenStrategies({
   groupOfHouses,
   boardSize,
-  contains,
   helpers,
 }: HiddenStrategyContext) {
   const { getRemainingNumbers, getPossibleCellsForCandidate, removeCandidatesFromMultipleCells } =
@@ -80,7 +78,7 @@ export function createHiddenStrategies({
 
           const candidatesToRemove = []
           for (let c = 0; c < boardSize; c++) {
-            if (!contains(combinedCandidates, c + 1)) candidatesToRemove.push(c + 1)
+            if (!combinedCandidates.includes(c + 1)) candidatesToRemove.push(c + 1)
           }
 
           const cellsUpdated = removeCandidatesFromMultipleCells(

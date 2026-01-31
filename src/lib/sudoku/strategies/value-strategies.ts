@@ -15,7 +15,6 @@ type ValueStrategyContext = {
   onError?: (args: { message: string }) => void
   onFinish?: (args: { difficulty: Difficulty; score: number }) => void
   isBoardFinished: (board: InternalBoard) => boolean
-  contains: (candidates: Array<CellValue>, digit: number) => boolean
   helpers: StrategyHelpers
 }
 
@@ -30,7 +29,6 @@ export function createValueStrategies({
   onError,
   onFinish,
   isBoardFinished,
-  contains,
   helpers,
 }: ValueStrategyContext) {
   const { getRemainingNumbers, getUsedNumbers } = helpers
@@ -140,7 +138,7 @@ export function createValueStrategies({
       if (cell === undefined) continue
       const boardCell = board[cell]
       if (boardCell === undefined) continue
-      if (!contains(boardCell.candidates, digit)) continue
+      if (!boardCell.candidates.includes(digit)) continue
       if (match !== null) {
         return null
       }

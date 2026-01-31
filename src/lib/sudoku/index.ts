@@ -42,12 +42,16 @@ export function analyze(board: Board): AnalyzeData {
   return { ...analyzeBoard(), hasUniqueSolution: isUniqueSolution(board) }
 }
 
+const MAX_GENERATE_ATTEMPTS = 50
+
 export function generate(difficulty: Difficulty): Board {
-  const { getBoard } = createSudokuInstance({ difficulty })
-  if (analyze(getBoard()).hasUniqueSolution !== true) {
-    return generate(difficulty)
+  for (let attempt = 0; attempt < MAX_GENERATE_ATTEMPTS; attempt++) {
+    const { getBoard } = createSudokuInstance({ difficulty })
+    if (analyze(getBoard()).hasUniqueSolution === true) {
+      return getBoard()
+    }
   }
-  return getBoard()
+  return createSudokuInstance({ difficulty }).getBoard()
 }
 
 export function solve(board: Board): SolvingResult {
