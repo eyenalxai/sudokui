@@ -25,7 +25,6 @@ export const MEDIUM_SUDOKU_BOARD_FOR_TEST = [
   null,
   null,
   null,
-  null,
   3,
   null,
   null,
