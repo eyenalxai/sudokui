@@ -44,7 +44,7 @@ export function analyze(board: Board): AnalyzeData {
 
 export function generate(difficulty: Difficulty): Board {
   const { getBoard } = createSudokuInstance({ difficulty })
-  if (!analyze(getBoard()).hasUniqueSolution) {
+  if (analyze(getBoard()).hasUniqueSolution !== true) {
     return generate(difficulty)
   }
   return getBoard()
@@ -66,7 +66,7 @@ export function solve(board: Board): SolvingResult {
 
   const solvedBoard = solveAll()
 
-  if (!analysis.hasUniqueSolution) {
+  if (analysis.hasUniqueSolution !== true) {
     return {
       solved: true,
       board: solvedBoard,
@@ -92,11 +92,11 @@ export function hint(board: Board): SolvingResult {
   }
   const solvedBoard = solveStep()
 
-  if (!solvedBoard) {
+  if (solvedBoard === false) {
     return { solved: false, error: "No solution for provided board!" }
   }
 
-  if (!analysis.hasUniqueSolution) {
+  if (analysis.hasUniqueSolution !== true) {
     return {
       solved: true,
       board: solvedBoard,

@@ -3,13 +3,14 @@ import type {
   Board,
   CellValue,
   InternalBoard,
-  StrategyFn,
   Strategy,
   Options,
   House,
   AnalyzeData,
   Difficulty,
   Update,
+  EliminationUpdate,
+  ValueUpdate,
 } from "./types"
 
 // Importing necessary constants
@@ -42,7 +43,7 @@ export function createSudokuInstance(options: Options = {}) {
 
   // Function to reset the board variables
   const resetCandidates = () => {
-    board = new Array(BOARD_SIZE * BOARD_SIZE).fill(null).map((_, index) => {
+    board = Array.from({ length: BOARD_SIZE * BOARD_SIZE }, () => null).map((_, index) => {
       const cell = board[index]!
       return {
         value: cell.value,
@@ -139,15 +140,19 @@ export function createSudokuInstance(options: Options = {}) {
   const removeCandidatesFromMultipleCells = (
     cells: Array<number>,
     candidates: Array<CellValue>,
-  ): Array<{ index: number; eliminatedCandidate: number }> => {
-    const cellsUpdated = []
+  ): EliminationUpdate[] => {
+    const cellsUpdated: EliminationUpdate[] = []
     for (let i = 0; i < cells.length; i++) {
       const cellCandidates = board[cells[i]!]!.candidates
 
       for (let j = 0; j < candidates.length; j++) {
         const candidate = candidates[j]
         //-1 because candidate '1' is at index 0 etc.
-        if (candidate && cellCandidates[candidate - 1] !== null) {
+        if (
+          candidate !== null &&
+          candidate !== undefined &&
+          cellCandidates[candidate - 1] !== null
+        ) {
           cellCandidates[candidate - 1] = null //NOTE: also deletes them from board variable
           cellsUpdated.push({
             index: cells[i]!,
@@ -229,7 +234,7 @@ export function createSudokuInstance(options: Options = {}) {
    * For instance, if a row has the numbers 1 through 8, then the last cell in that row must be 9.
    * -----------------------------------------------------------------*/
 
-  function openSinglesStrategy(): ReturnType<StrategyFn> {
+  function openSinglesStrategy(): ValueUpdate[] | false {
     const groupOfHouses = GROUP_OF_HOUSES
 
     for (let i = 0; i < groupOfHouses.length; i++) {
@@ -237,12 +242,16 @@ export function createSudokuInstance(options: Options = {}) {
         const singleEmptyCell = findSingleEmptyCellInHouse(groupOfHouses[i]![j]!)
 
         if (singleEmptyCell) {
-          return fillSingleEmptyCell(singleEmptyCell)
+          const result = fillSingleEmptyCell(singleEmptyCell)
+          if (result === -1) {
+            return false
+          }
+          return result
         }
 
         if (isBoardFinished(board)) {
           onFinish?.(calculateBoardDifficulty(usedStrategies, strategies))
-          return true
+          return false
         }
       }
     }
@@ -266,7 +275,10 @@ export function createSudokuInstance(options: Options = {}) {
     return emptyCells.length === 1 ? emptyCells[0] : null
   }
 
-  function fillSingleEmptyCell(emptyCell: { house: number[]; cellIndex: number }) {
+  function fillSingleEmptyCell(emptyCell: {
+    house: number[]
+    cellIndex: number
+  }): ValueUpdate[] | -1 {
     const value = getRemainingNumbers(emptyCell.house)
 
     if (value.length > 1) {
@@ -305,7 +317,7 @@ export function createSudokuInstance(options: Options = {}) {
   }
 
   const convertInitialBoardToSerializedBoard = (_board: Board): InternalBoard => {
-    return new Array(BOARD_SIZE * BOARD_SIZE).fill(null).map((_, i) => {
+    return Array.from({ length: BOARD_SIZE * BOARD_SIZE }, () => null).map((_, i) => {
       const value = _board[i] ?? null
       const candidates = value === null ? [...CANDIDATES] : [...NULL_CANDIDATE_LIST]
 
@@ -319,7 +331,7 @@ export function createSudokuInstance(options: Options = {}) {
    * If every other cell in a house already contains a number or can't possibly contain a certain number, then that number must go in the one cell where it's still a candidate.
    * For example, if in a row the number 3 can only be placed in the third cell, then it must go there.
    * -----------------------------------------------------------------*/
-  function singleCandidateStrategy(): ReturnType<StrategyFn> | false {
+  function singleCandidateStrategy(): ValueUpdate[] | false {
     const groupOfHousesLength = GROUP_OF_HOUSES.length
 
     for (let houseType = 0; houseType < groupOfHousesLength; houseType++) {
@@ -362,7 +374,7 @@ export function createSudokuInstance(options: Options = {}) {
    * Looks for cells with only one candidate
    * -- returns effectedCells - the updated cell(s), or false
    * -----------------------------------------------------------------*/
-  function visualEliminationStrategy(): ReturnType<StrategyFn> | false {
+  function visualEliminationStrategy(): ValueUpdate[] | false {
     for (let cellIndex = 0; cellIndex < board.length; cellIndex++) {
       const cell = board[cellIndex]
       const candidates = cell!.candidates
@@ -395,7 +407,7 @@ export function createSudokuInstance(options: Options = {}) {
    * --------------
    * This strategy is used when a certain number appears only in a single row or column within a box. That means this number can be eliminated from the other cells in that row or column that are not in this box. For example, if in a box the number 4 only appears in the cells of the first row, then the number 4 can be removed from the rest of the cells in the first row that are not in this box.
    * -----------------------------------------------------------------*/
-  function pointingEliminationStrategy(): ReturnType<StrategyFn> | false {
+  function pointingEliminationStrategy(): EliminationUpdate[] | false {
     const groupOfHousesLength = GROUP_OF_HOUSES.length
 
     for (let houseType = 0; houseType < groupOfHousesLength; houseType++) {
@@ -456,7 +468,7 @@ export function createSudokuInstance(options: Options = {}) {
             const cellsUpdated = removeCandidatesFromMultipleCells(cellsEffected, [digit])
 
             if (cellsUpdated.length > 0) {
-              return cellsUpdated as Update[]
+              return cellsUpdated
             }
           }
         }
@@ -474,7 +486,7 @@ export function createSudokuInstance(options: Options = {}) {
     candidates: Array<CellValue>
   }
 
-  function nakedCandidatesStrategy(number: number): ReturnType<StrategyFn> | false {
+  function nakedCandidatesStrategy(number: number): EliminationUpdate[] | false {
     let combineInfo: Array<CombineInfo> = []
     let minIndexes = [-1]
 
@@ -504,7 +516,7 @@ export function createSudokuInstance(options: Options = {}) {
     function checkCombinedCandidates(
       house: House,
       startIndex: number,
-    ): ReturnType<StrategyFn> | false {
+    ): EliminationUpdate[] | false {
       for (
         let i = Math.max(startIndex, minIndexes[startIndex]!);
         i < BOARD_SIZE - number + startIndex;
@@ -568,15 +580,13 @@ export function createSudokuInstance(options: Options = {}) {
           const cellsUpdated = removeCandidatesFromMultipleCells(cellsEffected, combinedCandidates)
 
           if (cellsUpdated.length > 0) {
-            return cellsUpdated as Update[]
+            return cellsUpdated
           }
         }
       }
 
-      if (startIndex > 0) {
-        if (combineInfo.length > startIndex - 1) {
-          combineInfo.pop()
-        }
+      if (startIndex > 0 && combineInfo.length > startIndex - 1) {
+        combineInfo.pop()
       }
 
       return false
@@ -616,7 +626,7 @@ export function createSudokuInstance(options: Options = {}) {
       cells: Array<number>
     }> = []
     let minIndexes = [-1]
-    function checkLockedCandidates(house: House, startIndex: number): Update[] | boolean {
+    function checkLockedCandidates(house: House, startIndex: number): EliminationUpdate[] | false {
       //log("startIndex: "+startIndex);
       for (
         let i = Math.max(startIndex, minIndexes[startIndex]!);
@@ -695,15 +705,13 @@ export function createSudokuInstance(options: Options = {}) {
             //log(combinedCandidates);
 
             //filter out duplicates
-            return cellsUpdated as Update[]
+            return cellsUpdated
           }
         }
       }
-      if (startIndex > 0) {
+      if (startIndex > 0 && combineInfo.length > startIndex - 1) {
         //if we added a value to our combo check, but failed to find pattern, we now need drop that value and go back up in chain and continue to check..
-        if (combineInfo.length > startIndex - 1) {
-          combineInfo.pop()
-        }
+        combineInfo.pop()
       }
       return false
     }
@@ -731,7 +739,7 @@ export function createSudokuInstance(options: Options = {}) {
    * --------------
    * These strategies are similar to the naked ones, but instead of looking for cells that only contain the group of candidates, they look for candidates that only appear in the group of cells. For example, if in a box, the numbers 2 and 3 only appear in two cells, then even if those cells have other candidates, you know that one of them has to be 2 and the other has to be 3, so you can remove any other candidates from those cells.
    * -----------------------------------------------------------------*/
-  function hiddenPairStrategy() {
+  function hiddenPairStrategy(): EliminationUpdate[] | false {
     return hiddenLockedCandidates(2)
   }
 
@@ -739,7 +747,7 @@ export function createSudokuInstance(options: Options = {}) {
    * --------------
    * These strategies are similar to the naked ones, but instead of looking for cells that only contain the group of candidates, they look for candidates that only appear in the group of cells. For example, if in a box, the numbers 2 and 3 only appear in two cells, then even if those cells have other candidates, you know that one of them has to be 2 and the other has to be 3, so you can remove any other candidates from those cells.
    * -----------------------------------------------------------------*/
-  function hiddenTripletStrategy() {
+  function hiddenTripletStrategy(): EliminationUpdate[] | false {
     return hiddenLockedCandidates(3)
   }
 
@@ -747,7 +755,7 @@ export function createSudokuInstance(options: Options = {}) {
    * --------------
    * These strategies are similar to the naked ones, but instead of looking for cells that only contain the group of candidates, they look for candidates that only appear in the group of cells. For example, if in a box, the numbers 2 and 3 only appear in two cells, then even if those cells have other candidates, you know that one of them has to be 2 and the other has to be 3, so you can remove any other candidates from those cells.
    * -----------------------------------------------------------------*/
-  function hiddenQuadrupleStrategy() {
+  function hiddenQuadrupleStrategy(): EliminationUpdate[] | false {
     return hiddenLockedCandidates(4)
   }
 
@@ -786,14 +794,12 @@ export function createSudokuInstance(options: Options = {}) {
     if (!analyzeMode) {
       onUpdate?.({
         strategy: strategies[strategyIndex]!.title,
-        updates: effectedCells as Update[],
+        updates: effectedCells,
         type: strategies[strategyIndex]!.type,
       })
     }
 
-    if (typeof usedStrategies[strategyIndex] === "undefined") {
-      usedStrategies[strategyIndex] = 0
-    }
+    usedStrategies[strategyIndex] ??= 0
 
     usedStrategies[strategyIndex] += 1
     return strategies[strategyIndex]!.type
@@ -829,7 +835,9 @@ export function createSudokuInstance(options: Options = {}) {
   }
   const generateBoardAnswerRecursively = (cellIndex: number) => {
     if (cellIndex + 1 > BOARD_SIZE * BOARD_SIZE) {
-      board.forEach((cell) => (cell.invalidCandidates = []))
+      for (const cell of board) {
+        cell.invalidCandidates = []
+      }
       return true
     }
     if (setBoardCellWithRandomCandidate(cellIndex)) {
@@ -872,7 +880,7 @@ export function createSudokuInstance(options: Options = {}) {
   function filterAndMapStrategies(strategies: Array<Strategy>, usedStrategies: Array<number>) {
     return strategies
       .map((strategy, i) =>
-        usedStrategies[i] !== undefined ? { title: strategy.title, freq: usedStrategies[i] } : null,
+        usedStrategies[i] === undefined ? null : { title: strategy.title, freq: usedStrategies[i] },
       )
       .filter(Boolean)
   }

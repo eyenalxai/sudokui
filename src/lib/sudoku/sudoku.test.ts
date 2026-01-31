@@ -29,10 +29,10 @@ describe("sudoku-core", () => {
       [DIFFICULTY_MASTER, MASTER_SUDOKU_BOARD_FOR_TEST],
     ] as [Difficulty, Board][]
 
-    items.forEach(([difficulty, sudokuBoard]) => {
+    for (const [difficulty, sudokuBoard] of items) {
       it(`should solve the ${difficulty} board`, () => {
         //Arrange
-        const emptyCellsLength = sudokuBoard.filter((cell) => !cell).length
+        const emptyCellsLength = sudokuBoard.filter((cell) => cell === null).length
         const solvingSteps: {
           strategy: string
           type: string
@@ -57,7 +57,7 @@ describe("sudoku-core", () => {
         expect(solvedBoard).toMatchSnapshot()
         expect(solvingSteps).toMatchSnapshot()
       })
-    })
+    }
   })
 
   describe("hint method", () => {
@@ -69,7 +69,7 @@ describe("sudoku-core", () => {
       [DIFFICULTY_MASTER, MASTER_SUDOKU_BOARD_FOR_TEST],
     ] as [Difficulty, Board][]
 
-    items.forEach(([difficulty, sudokuBoard]) => {
+    for (const [difficulty, sudokuBoard] of items) {
       it(`should give a hint for the ${difficulty} board`, () => {
         //Arrange
         const solvingSteps: {
@@ -95,7 +95,7 @@ describe("sudoku-core", () => {
         expect(solvedBoard).toMatchSnapshot()
         expect(solvingSteps).toMatchSnapshot()
       })
-    })
+    }
   })
 
   describe("analyze method", () => {

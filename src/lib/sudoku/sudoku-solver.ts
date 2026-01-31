@@ -26,7 +26,7 @@ let solutionCount = 0
 
 function solveSudoku(board: Board): boolean {
   for (let i = 0; i < 81; i++) {
-    if (!board[i]) {
+    if (board[i] === null) {
       for (let num = 1; num <= 9; num++) {
         if (isValid(board, i, num)) {
           board[i] = num

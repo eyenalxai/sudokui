@@ -26,10 +26,21 @@ export type Cell = {
 
 export type InternalBoard = Array<Cell>
 
-export type StrategyFn = () =>
-  | boolean
-  | Array<{ index: number; eliminatedCandidate?: number; filledValue: number }>
-  | -1
+export type EliminationUpdate = {
+  index: number
+  eliminatedCandidate: number
+}
+
+export type ValueUpdate = {
+  index: number
+  filledValue: number
+}
+
+export type Update = EliminationUpdate | ValueUpdate
+
+export type StrategyResult = ValueUpdate[] | EliminationUpdate[] | false | -1
+
+export type StrategyFn = () => StrategyResult
 
 export interface Strategy {
   title: string
@@ -38,12 +49,6 @@ export interface Strategy {
   postFn?: () => void
   prevFn?: () => void
   type: "value" | "elimination"
-}
-
-export interface Update {
-  index: number
-  eliminatedCandidate?: number
-  filledValue: number
 }
 
 export interface SolvingStep {

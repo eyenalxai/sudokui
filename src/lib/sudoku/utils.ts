@@ -59,7 +59,9 @@ export const generateHouseIndexList = (boardSize: number): Houses[] => {
 }
 
 export const isBoardFinished = (board: InternalBoard): boolean => {
-  return new Array(BOARD_SIZE * BOARD_SIZE).fill(null).every((_, i) => board[i]!.value !== null)
+  return Array.from({ length: BOARD_SIZE * BOARD_SIZE }, () => null).every(
+    (_, i) => board[i]!.value !== null,
+  )
 }
 
 export const isEasyEnough = (difficulty: Difficulty, currentDifficulty: Difficulty): boolean => {
@@ -118,6 +120,9 @@ export const getRemovalCountBasedOnDifficulty = (difficulty: Difficulty) => {
       return BOARD_SIZE * BOARD_SIZE - 30
     case DIFFICULTY_HARD:
       return BOARD_SIZE * BOARD_SIZE - 20
+    case DIFFICULTY_EXPERT:
+    case DIFFICULTY_MASTER:
+      return BOARD_SIZE * BOARD_SIZE - 17
     default:
       return BOARD_SIZE * BOARD_SIZE - 17
   }
