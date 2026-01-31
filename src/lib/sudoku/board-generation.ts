@@ -1,4 +1,11 @@
-import type { AnalyzeData, Board, CellValue, Difficulty, InternalBoard } from "./types"
+import type {
+  AnalyzeData,
+  Board,
+  CellValue,
+  Difficulty,
+  InternalBoard,
+  StrategyResult,
+} from "./types"
 
 type BoardGenerationContext = {
   getBoardCells: () => InternalBoard
@@ -6,7 +13,7 @@ type BoardGenerationContext = {
   getBoardValues: () => Board
   boardSize: number
   difficulty: Difficulty
-  updateCandidatesBasedOnCellsValue: () => boolean
+  updateCandidatesBasedOnCellsValue: () => StrategyResult
   resetCandidates: () => void
   addValueToCellIndex: (board: InternalBoard, cellIndex: number, value: CellValue) => void
   getRandomCandidateOfCell: (candidates: Array<CellValue>) => CellValue | undefined

@@ -1,4 +1,4 @@
-import type { CellValue, EliminationUpdate, House } from "../types"
+import type { CellValue, EliminationUpdate, House, Option, StrategyResult } from "../types"
 import type { StrategyHelpers } from "./strategy-helpers"
 
 type NakedStrategyContext = {
@@ -60,7 +60,7 @@ function collectCombineInfoCandidates(combineInfo: Array<CombineInfo>): Array<Ce
 export function createNakedStrategies({ groupOfHouses, boardSize, helpers }: NakedStrategyContext) {
   const { getRemainingNumbers, getRemainingCandidates, applyCandidateRemovals } = helpers
 
-  function nakedCandidatesStrategy(number: number): EliminationUpdate[] | false {
+  function nakedCandidatesStrategy(number: number): StrategyResult {
     let combineInfo: Array<CombineInfo> = []
     let minIndexes = [-1]
 
@@ -82,20 +82,20 @@ export function createNakedStrategies({ groupOfHouses, boardSize, helpers }: Nak
 
         const result = checkCombinedCandidates(house, 0)
 
-        if (result !== false) {
-          return result
+        if (result.found) {
+          return { kind: "updates", updates: result.value }
         }
       }
     }
 
-    return false
+    return { kind: "none" }
 
     function checkCombinedCandidates(
       house: House,
       startIndex: number,
-    ): EliminationUpdate[] | false {
+    ): Option<EliminationUpdate[]> {
       const minIndex = minIndexes[startIndex]
-      if (minIndex === undefined) return false
+      if (minIndex === undefined) return { found: false }
       // Use "<" here because we iterate cell indices (0..boardSize-1), not candidates.
       for (let i = Math.max(startIndex, minIndex); i < boardSize - number + startIndex; i++) {
         minIndexes[startIndex] = i + 1
@@ -121,7 +121,7 @@ export function createNakedStrategies({ groupOfHouses, boardSize, helpers }: Nak
         if (startIndex < number - 1) {
           const result = checkCombinedCandidates(house, startIndex + 1)
 
-          if (result !== false) {
+          if (result.found) {
             return result
           }
         }
@@ -136,7 +136,7 @@ export function createNakedStrategies({ groupOfHouses, boardSize, helpers }: Nak
           const cellsUpdated = applyCandidateRemovals(cellsAffected, combinedCandidates)
 
           if (cellsUpdated.length > 0) {
-            return cellsUpdated
+            return { found: true, value: cellsUpdated }
           }
         }
       }
@@ -145,19 +145,19 @@ export function createNakedStrategies({ groupOfHouses, boardSize, helpers }: Nak
         combineInfo.pop()
       }
 
-      return false
+      return { found: false }
     }
   }
 
-  function nakedPairStrategy(): EliminationUpdate[] | false {
+  function nakedPairStrategy(): StrategyResult {
     return nakedCandidatesStrategy(2)
   }
 
-  function nakedTripletStrategy(): EliminationUpdate[] | false {
+  function nakedTripletStrategy(): StrategyResult {
     return nakedCandidatesStrategy(3)
   }
 
-  function nakedQuadrupleStrategy(): EliminationUpdate[] | false {
+  function nakedQuadrupleStrategy(): StrategyResult {
     return nakedCandidatesStrategy(4)
   }
 

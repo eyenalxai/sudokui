@@ -1,4 +1,4 @@
-import type { Board, InternalBoard, Strategy, Options, Update } from "./types"
+import type { Board, InternalBoard, Strategy, Options, StrategyResult } from "./types"
 
 import { createBoardGenerator } from "./board-generation"
 import { DIFFICULTY_MEDIUM, BOARD_SIZE, CANDIDATES, NULL_CANDIDATE_LIST } from "./constants"
@@ -210,11 +210,11 @@ export function createSudokuInstance(options: Options = {}) {
       onError?.({ message: "No More Strategies To Solve The Board" })
       return false
     }
-    const effectedCells: boolean | -1 | Update[] = strategy.fn()
+    const result: StrategyResult = strategy.fn()
 
     strategy.postFn?.()
 
-    if (effectedCells === false) {
+    if (result.kind === "none") {
       if (strategies.length > strategyIndex + 1) {
         return applySolvingStrategies({
           strategyIndex: strategyIndex + 1,
@@ -224,14 +224,14 @@ export function createSudokuInstance(options: Options = {}) {
       onError?.({ message: "No More Strategies To Solve The Board" })
       return false
     }
-    if (effectedCells === -1) {
+    if (result.kind === "error") {
       return false
     }
 
     if (!analyzeMode) {
       onUpdate?.({
         strategy: strategy.title,
-        updates: effectedCells,
+        updates: result.updates,
         type: strategy.type,
       })
     }

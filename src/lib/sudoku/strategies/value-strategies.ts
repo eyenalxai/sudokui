@@ -1,4 +1,11 @@
-import type { CellValue, Difficulty, InternalBoard, Strategy, ValueUpdate, House } from "../types"
+import type {
+  CellValue,
+  Difficulty,
+  InternalBoard,
+  Strategy,
+  StrategyResult,
+  House,
+} from "../types"
 import type { StrategyHelpers } from "./strategy-helpers"
 
 type ValueStrategyContext = {
@@ -53,28 +60,25 @@ export function createValueStrategies({
     return emptyCells.length === 1 ? emptyCells[0] : null
   }
 
-  function fillSingleEmptyCell(emptyCell: {
-    house: number[]
-    cellIndex: number
-  }): ValueUpdate[] | -1 {
+  function fillSingleEmptyCell(emptyCell: { house: number[]; cellIndex: number }): StrategyResult {
     const board = getBoard()
     const value = getRemainingNumbers(emptyCell.house)
 
     if (value.length > 1) {
       onError?.({ message: "Board Incorrect" })
-      return -1
+      return { kind: "error" }
     }
 
     const filledValue = value[0]
     if (filledValue === undefined) {
       onError?.({ message: "Board Incorrect" })
-      return -1
+      return { kind: "error" }
     }
     addValueToCellIndex(board, emptyCell.cellIndex, filledValue) //does not update UI
-    return [{ index: emptyCell.cellIndex, filledValue }]
+    return { kind: "updates", updates: [{ index: emptyCell.cellIndex, filledValue }] }
   }
 
-  function openSinglesStrategy(): ValueUpdate[] | false {
+  function openSinglesStrategy(): StrategyResult {
     const board = getBoard()
 
     for (let i = 0; i < groupOfHouses.length; i++) {
@@ -87,22 +91,19 @@ export function createValueStrategies({
 
         if (singleEmptyCell) {
           const result = fillSingleEmptyCell(singleEmptyCell)
-          if (result === -1) {
-            return false
-          }
           return result
         }
 
         if (isBoardFinished(board)) {
           onFinish?.(calculateBoardDifficulty(getUsedStrategies(), getStrategies()))
-          return false
+          return { kind: "none" }
         }
       }
     }
-    return false
+    return { kind: "none" }
   }
 
-  function updateCandidatesBasedOnCellsValue(): false {
+  function updateCandidatesBasedOnCellsValue(): StrategyResult {
     const board = getBoard()
     const groupOfHousesLength = groupOfHouses.length
 
@@ -126,7 +127,7 @@ export function createValueStrategies({
       }
     }
 
-    return false
+    return { kind: "none" }
   }
 
   function findSingleCandidateCellForDigit(house: House, digit: number): number | null {
@@ -146,7 +147,7 @@ export function createValueStrategies({
     return match
   }
 
-  function singleCandidateStrategy(): ValueUpdate[] | false {
+  function singleCandidateStrategy(): StrategyResult {
     const board = getBoard()
     const groupOfHousesLength = groupOfHouses.length
 
@@ -165,16 +166,16 @@ export function createValueStrategies({
           if (cellIndex !== null) {
             addValueToCellIndex(board, cellIndex, digit)
 
-            return [{ index: cellIndex, filledValue: digit }]
+            return { kind: "updates", updates: [{ index: cellIndex, filledValue: digit }] }
           }
         }
       }
     }
 
-    return false
+    return { kind: "none" }
   }
 
-  function visualEliminationStrategy(): ValueUpdate[] | false {
+  function visualEliminationStrategy(): StrategyResult {
     const board = getBoard()
     for (let cellIndex = 0; cellIndex < board.length; cellIndex++) {
       const cell = board[cellIndex]
@@ -200,11 +201,11 @@ export function createValueStrategies({
 
         addValueToCellIndex(board, cellIndex, digit)
 
-        return [{ index: cellIndex, filledValue: digit }]
+        return { kind: "updates", updates: [{ index: cellIndex, filledValue: digit }] }
       }
     }
 
-    return false
+    return { kind: "none" }
   }
 
   return {

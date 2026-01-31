@@ -1,4 +1,4 @@
-import type { EliminationUpdate, House } from "../types"
+import type { EliminationUpdate, House, Option, StrategyResult } from "../types"
 import type { StrategyHelpers } from "./strategy-helpers"
 
 type HiddenStrategyContext = {
@@ -32,15 +32,15 @@ export function createHiddenStrategies({
 }: HiddenStrategyContext) {
   const { getRemainingNumbers, getPossibleCellsForCandidate, applyCandidateRemovals } = helpers
 
-  function hiddenLockedCandidates(number: number) {
+  function hiddenLockedCandidates(number: number): StrategyResult {
     let combineInfo: Array<{
       candidate: number
       cells: Array<number>
     }> = []
     let minIndexes = [-1]
-    function checkLockedCandidates(house: House, startIndex: number): EliminationUpdate[] | false {
+    function checkLockedCandidates(house: House, startIndex: number): Option<EliminationUpdate[]> {
       const minIndex = minIndexes[startIndex]
-      if (minIndex === undefined) return false
+      if (minIndex === undefined) return { found: false }
       for (let i = Math.max(startIndex, minIndex); i <= boardSize - number + startIndex; i++) {
         minIndexes[startIndex] = i + 1
         minIndexes[startIndex + 1] = i + 1
@@ -61,8 +61,8 @@ export function createHiddenStrategies({
         combineInfo.push({ candidate: candidate, cells: possibleCells })
 
         if (startIndex < number - 1) {
-          const r = checkLockedCandidates(house, startIndex + 1)
-          if (r !== false) return r
+          const result = checkLockedCandidates(house, startIndex + 1)
+          if (result.found) return result
         }
 
         if (combineInfo.length === number) {
@@ -84,14 +84,14 @@ export function createHiddenStrategies({
           const cellsUpdated = applyCandidateRemovals(cellsWithCandidates, candidatesToRemove)
 
           if (cellsUpdated.length > 0) {
-            return cellsUpdated
+            return { found: true, value: cellsUpdated }
           }
         }
       }
       if (startIndex > 0 && combineInfo.length > startIndex - 1) {
         combineInfo.pop()
       }
-      return false
+      return { found: false }
     }
     const groupOfHousesLength = groupOfHouses.length
     for (let i = 0; i < groupOfHousesLength; i++) {
@@ -105,21 +105,23 @@ export function createHiddenStrategies({
         minIndexes = [-1]
 
         const result = checkLockedCandidates(house, 0)
-        if (result !== false) return result
+        if (result.found) {
+          return { kind: "updates", updates: result.value }
+        }
       }
     }
-    return false
+    return { kind: "none" }
   }
 
-  function hiddenPairStrategy(): EliminationUpdate[] | false {
+  function hiddenPairStrategy(): StrategyResult {
     return hiddenLockedCandidates(2)
   }
 
-  function hiddenTripletStrategy(): EliminationUpdate[] | false {
+  function hiddenTripletStrategy(): StrategyResult {
     return hiddenLockedCandidates(3)
   }
 
-  function hiddenQuadrupleStrategy(): EliminationUpdate[] | false {
+  function hiddenQuadrupleStrategy(): StrategyResult {
     return hiddenLockedCandidates(4)
   }
 

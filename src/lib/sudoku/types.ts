@@ -38,7 +38,12 @@ export type ValueUpdate = {
 
 export type Update = EliminationUpdate | ValueUpdate
 
-export type StrategyResult = ValueUpdate[] | EliminationUpdate[] | false | -1
+export type Option<T> = { found: true; value: T } | { found: false }
+
+export type StrategyResult =
+  | { kind: "updates"; updates: ValueUpdate[] | EliminationUpdate[] }
+  | { kind: "none" }
+  | { kind: "error" }
 
 export type StrategyFn = () => StrategyResult
 

@@ -1,4 +1,11 @@
-import type { AnalyzeData, Board, Difficulty, InternalBoard, Strategy } from "./types"
+import type {
+  AnalyzeData,
+  Board,
+  Difficulty,
+  InternalBoard,
+  Strategy,
+  StrategyResult,
+} from "./types"
 
 type OperationsContext = {
   getBoardCells: () => InternalBoard
@@ -21,7 +28,7 @@ type OperationsContext = {
   ) => { difficulty: Difficulty; score: number }
   cloneBoard: (board: InternalBoard) => InternalBoard
   convertInitialBoardToSerializedBoard: (board: Board) => InternalBoard
-  updateCandidatesBasedOnCellsValue: () => boolean
+  updateCandidatesBasedOnCellsValue: () => StrategyResult
 }
 
 export function createSudokuOperations({

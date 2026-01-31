@@ -1,4 +1,4 @@
-import type { EliminationUpdate, House, InternalBoard } from "../types"
+import type { House, InternalBoard, StrategyResult } from "../types"
 import type { StrategyHelpers } from "./strategy-helpers"
 
 type EliminationStrategyContext = {
@@ -56,7 +56,7 @@ export function createEliminationStrategies({
     return { cellsWithCandidate, sameAltHouse, sameAltTwoHouse }
   }
 
-  function pointingEliminationStrategy(): EliminationUpdate[] | false {
+  function pointingEliminationStrategy(): StrategyResult {
     const groupOfHousesLength = groupOfHouses.length
 
     for (let houseType = 0; houseType < groupOfHousesLength; houseType++) {
@@ -91,13 +91,13 @@ export function createEliminationStrategies({
           const cellsAffected = altHouse.filter((cell) => !cellsWithCandidateSet.has(cell))
           const cellsUpdated = applyCandidateRemovals(cellsAffected, [digit])
           if (cellsUpdated.length > 0) {
-            return cellsUpdated
+            return { kind: "updates", updates: cellsUpdated }
           }
         }
       }
     }
 
-    return false
+    return { kind: "none" }
   }
 
   return { pointingEliminationStrategy }
