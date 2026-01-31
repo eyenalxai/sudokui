@@ -1,33 +1,24 @@
 import { Schema } from "effect"
 
 export const Technique = Schema.Literal(
-  // Singles
   "FULL_HOUSE",
   "NAKED_SINGLE",
   "HIDDEN_SINGLE",
-
-  // Intersections
   "LOCKED_PAIR",
   "LOCKED_TRIPLE",
   "LOCKED_CANDIDATES",
-
-  // Subsets
   "NAKED_PAIR",
   "NAKED_TRIPLE",
   "NAKED_QUADRUPLE",
   "HIDDEN_PAIR",
   "HIDDEN_TRIPLE",
   "HIDDEN_QUADRUPLE",
-
-  // Basic Fish
   "X_WING",
   "SWORDFISH",
   "JELLYFISH",
   "SQUIRMBAG",
   "WHALE",
   "LEVIATHAN",
-
-  // Finned Fish
   "FINNED_X_WING",
   "FINNED_SWORDFISH",
   "FINNED_JELLYFISH",
@@ -40,8 +31,6 @@ export const Technique = Schema.Literal(
   "SASHIMI_SQUIRMBAG",
   "SASHIMI_WHALE",
   "SASHIMI_LEVIATHAN",
-
-  // Franken/Mutant Fish
   "FRANKEN_X_WING",
   "FRANKEN_SWORDFISH",
   "FRANKEN_JELLYFISH",
@@ -66,18 +55,12 @@ export const Technique = Schema.Literal(
   "FINNED_MUTANT_SQUIRMBAG",
   "FINNED_MUTANT_WHALE",
   "FINNED_MUTANT_LEVIATHAN",
-
-  // Single Digit Patterns
   "SKYSCRAPER",
   "TWO_STRING_KITE",
   "EMPTY_RECTANGLE",
-
-  // Wings
   "XY_WING",
   "XYZ_WING",
   "W_WING",
-
-  // Chains
   "X_CHAIN",
   "XY_CHAIN",
   "REMOTE_PAIR",
@@ -85,12 +68,8 @@ export const Technique = Schema.Literal(
   "CONTINUOUS_NICE_LOOP",
   "DISCONTINUOUS_NICE_LOOP",
   "AIC",
-
-  // Colors
   "SIMPLE_COLORS",
   "MULTI_COLORS",
-
-  // Uniqueness
   "UNIQUENESS_1",
   "UNIQUENESS_2",
   "UNIQUENESS_3",
@@ -99,19 +78,13 @@ export const Technique = Schema.Literal(
   "UNIQUENESS_6",
   "BUG_PLUS_1",
   "HIDDEN_RECTANGLE",
-
-  // ALS
   "ALS_XZ",
   "ALS_XY_WING",
   "ALS_XY_CHAIN",
   "DEATH_BLOSSOM",
-
-  // Advanced
   "SUE_DE_COQ",
   "TEMPLATE_SET",
   "TEMPLATE_DEL",
-
-  // Last Resort
   "FORCING_CHAIN",
   "FORCING_NET",
   "BRUTE_FORCE",

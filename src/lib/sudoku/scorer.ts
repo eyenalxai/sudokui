@@ -3,8 +3,9 @@ import { Effect } from "effect"
 import { DifficultyLevel, DIFFICULTY_THRESHOLDS } from "./difficulty.ts"
 import { countCandidates } from "./grid/candidates.ts"
 import { SudokuGrid } from "./grid/class.ts"
-import { TECHNIQUE_DIFFICULTY, TECHNIQUE_SCORES } from "./techniques/index.ts"
-import { Technique } from "./techniques/types.ts"
+import { TECHNIQUE_DIFFICULTY } from "./technique-difficulty.ts"
+import { TECHNIQUE_SCORES } from "./technique-scores.ts"
+import { Technique } from "./technique.ts"
 
 const calculateScoreImpl = (techniques: Technique[]): number => {
   let score = 0

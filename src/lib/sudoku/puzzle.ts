@@ -1,7 +1,7 @@
 import { Schema } from "effect"
 
 import { DifficultyLevel } from "./difficulty.ts"
-import { Technique } from "./techniques/types.ts"
+import { Technique } from "./technique.ts"
 
 export const CellIndex = Schema.Number.pipe(
   Schema.int(),
