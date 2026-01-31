@@ -1,7 +1,5 @@
 import { describe, it, expect } from "bun:test"
 
-import type { Board, Difficulty } from "./types"
-
 import {
   DIFFICULTY_EASY,
   DIFFICULTY_EXPERT,
@@ -22,14 +20,14 @@ import { MEDIUM_SUDOKU_BOARD_FOR_TEST } from "./test-boards-medium"
 describe("sudoku-core", () => {
   describe("solve method", () => {
     const items = [
-      [DIFFICULTY_EASY, EASY_SUDOKU_BOARD_FOR_TEST],
-      [DIFFICULTY_MEDIUM, MEDIUM_SUDOKU_BOARD_FOR_TEST],
-      [DIFFICULTY_HARD, HARD_SUDOKU_BOARD_FOR_TEST],
-      [DIFFICULTY_EXPERT, EXPERT_SUDOKU_BOARD_FOR_TEST],
-      [DIFFICULTY_MASTER, MASTER_SUDOKU_BOARD_FOR_TEST],
-    ] as [Difficulty, Board][]
+      { difficulty: DIFFICULTY_EASY, board: EASY_SUDOKU_BOARD_FOR_TEST },
+      { difficulty: DIFFICULTY_MEDIUM, board: MEDIUM_SUDOKU_BOARD_FOR_TEST },
+      { difficulty: DIFFICULTY_HARD, board: HARD_SUDOKU_BOARD_FOR_TEST },
+      { difficulty: DIFFICULTY_EXPERT, board: EXPERT_SUDOKU_BOARD_FOR_TEST },
+      { difficulty: DIFFICULTY_MASTER, board: MASTER_SUDOKU_BOARD_FOR_TEST },
+    ]
 
-    for (const [difficulty, sudokuBoard] of items) {
+    for (const { difficulty, board: sudokuBoard } of items) {
       it(`should solve the ${difficulty} board`, () => {
         const emptyCellsLength = sudokuBoard.filter((cell) => cell === null).length
         const solvingSteps: {
@@ -39,7 +37,7 @@ describe("sudoku-core", () => {
         }[] = []
 
         const { solveAll } = createSudokuInstance({
-          initBoard: sudokuBoard.slice() as Board,
+          initBoard: sudokuBoard.slice(),
           onUpdate: (solvingStep) => solvingSteps.push(solvingStep),
         })
 
@@ -59,14 +57,14 @@ describe("sudoku-core", () => {
 
   describe("hint method", () => {
     const items = [
-      [DIFFICULTY_EASY, EASY_SUDOKU_BOARD_FOR_TEST],
-      [DIFFICULTY_MEDIUM, MEDIUM_SUDOKU_BOARD_FOR_TEST],
-      [DIFFICULTY_HARD, HARD_SUDOKU_BOARD_FOR_TEST],
-      [DIFFICULTY_EXPERT, EXPERT_SUDOKU_BOARD_FOR_TEST],
-      [DIFFICULTY_MASTER, MASTER_SUDOKU_BOARD_FOR_TEST],
-    ] as [Difficulty, Board][]
+      { difficulty: DIFFICULTY_EASY, board: EASY_SUDOKU_BOARD_FOR_TEST },
+      { difficulty: DIFFICULTY_MEDIUM, board: MEDIUM_SUDOKU_BOARD_FOR_TEST },
+      { difficulty: DIFFICULTY_HARD, board: HARD_SUDOKU_BOARD_FOR_TEST },
+      { difficulty: DIFFICULTY_EXPERT, board: EXPERT_SUDOKU_BOARD_FOR_TEST },
+      { difficulty: DIFFICULTY_MASTER, board: MASTER_SUDOKU_BOARD_FOR_TEST },
+    ]
 
-    for (const [difficulty, sudokuBoard] of items) {
+    for (const { difficulty, board: sudokuBoard } of items) {
       it(`should give a hint for the ${difficulty} board`, () => {
         const solvingSteps: {
           strategy: string
@@ -74,7 +72,7 @@ describe("sudoku-core", () => {
           updates: { index: number; filledValue?: number; eliminatedCandidate?: number }[]
         }[] = []
         const { solveStep } = createSudokuInstance({
-          initBoard: sudokuBoard.slice() as Board,
+          initBoard: sudokuBoard.slice(),
           onUpdate: (solvingStep) => solvingSteps.push(solvingStep),
         })
 
@@ -96,7 +94,7 @@ describe("sudoku-core", () => {
     it("should invalidate the wrong board", () => {
       const sudokuBoard = [1]
       const { analyzeBoard } = createSudokuInstance({
-        initBoard: sudokuBoard as Board,
+        initBoard: sudokuBoard,
       })
 
       const { difficulty, hasSolution } = analyzeBoard()
@@ -106,7 +104,7 @@ describe("sudoku-core", () => {
     })
 
     it("should validate the easy board", () => {
-      const sudokuBoard = [...EASY_SUDOKU_BOARD_FOR_TEST] as Board
+      const sudokuBoard = [...EASY_SUDOKU_BOARD_FOR_TEST]
       const { analyzeBoard } = createSudokuInstance({
         initBoard: sudokuBoard,
       })
@@ -118,7 +116,7 @@ describe("sudoku-core", () => {
     })
 
     it("should validate the medium board", () => {
-      const sudokuBoard = [...MEDIUM_SUDOKU_BOARD_FOR_TEST] as Board
+      const sudokuBoard = [...MEDIUM_SUDOKU_BOARD_FOR_TEST]
       const { analyzeBoard } = createSudokuInstance({
         initBoard: sudokuBoard,
       })
@@ -130,7 +128,7 @@ describe("sudoku-core", () => {
     })
 
     it("should validate the hard board", () => {
-      const sudokuBoard = [...HARD_SUDOKU_BOARD_FOR_TEST] as Board
+      const sudokuBoard = [...HARD_SUDOKU_BOARD_FOR_TEST]
       const { analyzeBoard } = createSudokuInstance({
         initBoard: sudokuBoard,
       })
@@ -142,7 +140,7 @@ describe("sudoku-core", () => {
     })
 
     it("should validate the expert board", () => {
-      const sudokuBoard = [...EXPERT_SUDOKU_BOARD_FOR_TEST] as Board
+      const sudokuBoard = [...EXPERT_SUDOKU_BOARD_FOR_TEST]
       const { analyzeBoard } = createSudokuInstance({
         initBoard: sudokuBoard,
       })
@@ -154,7 +152,7 @@ describe("sudoku-core", () => {
     })
 
     it("should validate the master board", () => {
-      const sudokuBoard = [...MASTER_SUDOKU_BOARD_FOR_TEST] as Board
+      const sudokuBoard = [...MASTER_SUDOKU_BOARD_FOR_TEST]
       const { analyzeBoard } = createSudokuInstance({
         initBoard: sudokuBoard,
       })

@@ -1,4 +1,4 @@
-type Board = (number | null)[]
+import type { Board } from "./types"
 
 function isValid(board: Board, index: number, num: number): boolean {
   const row = Math.floor(index / 9)

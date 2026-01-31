@@ -1,4 +1,6 @@
-export const EASY_SUDOKU_BOARD_FOR_TEST = [
+import type { Board } from "./types"
+
+export const EASY_SUDOKU_BOARD_FOR_TEST: Board = [
   3,
   4,
   null,

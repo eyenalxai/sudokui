@@ -1,4 +1,6 @@
-export const MEDIUM_SUDOKU_BOARD_FOR_TEST = [
+import type { Board } from "./types"
+
+export const MEDIUM_SUDOKU_BOARD_FOR_TEST: Board = [
   7,
   3,
   6,

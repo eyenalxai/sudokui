@@ -1,4 +1,6 @@
-export const HARD_SUDOKU_BOARD_FOR_TEST = [
+import type { Board } from "./types"
+
+export const HARD_SUDOKU_BOARD_FOR_TEST: Board = [
   null,
   null,
   8,
@@ -82,7 +84,7 @@ export const HARD_SUDOKU_BOARD_FOR_TEST = [
   2,
 ]
 
-export const EXPERT_SUDOKU_BOARD_FOR_TEST = [
+export const EXPERT_SUDOKU_BOARD_FOR_TEST: Board = [
   null,
   null,
   null,
@@ -166,7 +168,7 @@ export const EXPERT_SUDOKU_BOARD_FOR_TEST = [
   null,
 ]
 
-export const MASTER_SUDOKU_BOARD_FOR_TEST = [
+export const MASTER_SUDOKU_BOARD_FOR_TEST: Board = [
   null,
   null,
   null,
