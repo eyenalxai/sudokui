@@ -1,6 +1,7 @@
 import { Effect } from "effect"
 
-import { SudokuGrid, getSingleCandidate, getCandidatesArray } from "./grid.ts"
+import { getCandidatesArray, getSingleCandidate } from "./grid/candidates.ts"
+import { SudokuGrid } from "./grid/class.ts"
 import { SolveError } from "./puzzle.ts"
 
 const countSolutionsImpl = (grid: SudokuGrid, maxCount: number): number => {

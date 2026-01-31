@@ -1,7 +1,8 @@
 import { Effect, Option, Random, Chunk } from "effect"
 
 import { DifficultyLevel } from "./difficulty.ts"
-import { SudokuGrid, getCandidatesArray } from "./grid.ts"
+import { getCandidatesArray } from "./grid/candidates.ts"
+import { SudokuGrid } from "./grid/class.ts"
 import { GenerateOptions, GenerationError } from "./puzzle.ts"
 import { DifficultyScorer } from "./scorer.ts"
 import { SolutionFinder } from "./solver.ts"
