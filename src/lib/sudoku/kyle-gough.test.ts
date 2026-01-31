@@ -5,7 +5,6 @@ import { Effect } from "effect"
 import { SudokuGrid } from "./grid.ts"
 import { SolutionFinder } from "./solver.ts"
 
-// Helper to load puzzles from CSV file
 const loadPuzzlesFromCSV = async (filePath: string, sampleSize?: number): Promise<string[]> => {
   const file = Bun.file(filePath)
   const content = await file.text()
@@ -15,7 +14,6 @@ const loadPuzzlesFromCSV = async (filePath: string, sampleSize?: number): Promis
     .filter((line: string) => line.length === 81)
 
   if (sampleSize !== undefined && sampleSize < lines.length) {
-    // Random sample
     const shuffled = [...lines].toSorted(() => Math.random() - 0.5)
     return shuffled.slice(0, sampleSize)
   }
@@ -23,7 +21,6 @@ const loadPuzzlesFromCSV = async (filePath: string, sampleSize?: number): Promis
   return lines
 }
 
-// Helper to run solve test with timing
 const testPuzzleSolving = (
   puzzle: string,
   description: string,
@@ -54,7 +51,7 @@ const testPuzzleSolving = (
 
 describe("Kyle Gough Solving Benchmarks", () => {
   const testDir = "/home/ulezot/Projects/misc/sudoku-kyle-gough/tests"
-  const sampleSize = 2 // Just 2 samples per file
+  const sampleSize = 2
 
   describe("X-Wing puzzles", () => {
     it("should solve X-Wing puzzle samples", async () => {

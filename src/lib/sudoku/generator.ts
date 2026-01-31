@@ -13,15 +13,12 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
     const solutionFinder = yield* SolutionFinder
     const difficultyScorer = yield* DifficultyScorer
 
-    // Generate a complete valid sudoku grid using backtracking with random order
     const generateFullGrid = Effect.fn("PuzzleGenerator.generateFullGrid")(function* () {
       const grid = new SudokuGrid()
 
-      // Get shuffled indices for fill order
       const indicesChunk = yield* Random.shuffle(Array.from({ length: 81 }, (_, i) => i))
       const indices = Chunk.toArray(indicesChunk)
 
-      // Use a stack-based approach to avoid recursion issues
       const stack: Array<{ pos: number; candidates: number[]; candidateIdx: number }> = []
       let currentPos = 0
 
@@ -29,7 +26,6 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
         const idx = indices[currentPos]
         if (idx === undefined) break
 
-        // If we're backtracking, restore the grid state
         while (stack.length > currentPos) {
           const state = stack.pop()
           if (state) {
@@ -40,16 +36,13 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
           }
         }
 
-        // Get candidates for current cell
         let candidates: number[]
         const existingState = stack[currentPos]
 
         if (existingState) {
-          // Continue with next candidate
           candidates = existingState.candidates
           existingState.candidateIdx++
         } else {
-          // New cell - shuffle candidates
           candidates = getCandidatesArray(grid.getCandidates(idx))
           const shuffledChunk = yield* Random.shuffle(candidates)
           candidates = Chunk.toArray(shuffledChunk)
@@ -59,7 +52,6 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
         const state = stack[currentPos]
         if (!state) break
 
-        // Try candidates starting from current index
         let found = false
         for (let i = state.candidateIdx; i < candidates.length; i++) {
           const value = candidates[i]
@@ -73,7 +65,6 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
         if (found) {
           currentPos++
         } else {
-          // Backtrack
           grid.setCell(idx, 0)
           stack.pop()
           currentPos--
@@ -91,7 +82,6 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
       return grid
     })
 
-    // Remove cells to create puzzle while maintaining unique solution
     const removeCells = Effect.fn("PuzzleGenerator.removeCells")(function* (
       fullGrid: SudokuGrid,
       targetDifficulty: DifficultyLevel,
@@ -100,7 +90,6 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
     ) {
       const puzzle = fullGrid.clone()
 
-      // Get shuffled indices
       const indicesChunk = yield* Random.shuffle(Array.from({ length: 81 }, (_, i) => i))
       const indices = Chunk.toArray(indicesChunk)
 
@@ -110,13 +99,11 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
         if (used.has(idx)) continue
         if (puzzle.getCell(idx) === 0) continue
 
-        // Check symmetry
         if (symmetric && idx !== 40) {
           const symmetricIdx = 80 - idx
           if (puzzle.getCell(symmetricIdx) === 0) continue
         }
 
-        // Try removing this cell
         const value = puzzle.getCell(idx)
         puzzle.setCell(idx, 0)
         used.add(idx)
@@ -129,33 +116,27 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
           used.add(symmetricIdx)
         }
 
-        // Check if still has unique solution
         const isUnique = yield* solutionFinder.hasUniqueSolution(puzzle)
 
         if (!isUnique) {
-          // Restore cells
           puzzle.setCell(idx, value)
           if (symmetric && idx !== 40) {
             puzzle.setCell(80 - idx, symmetricValue)
           }
         }
 
-        // Check if we have enough clues removed (reached minimum)
         const clues = puzzle.countGivens()
         if (clues <= minClues) {
           break
         }
       }
 
-      // Analyze difficulty
       const analysis = yield* difficultyScorer.analyzePuzzle(puzzle)
 
-      // Check if difficulty matches target
       const difficultyOrder = ["INCOMPLETE", "EASY", "MEDIUM", "HARD", "UNFAIR", "EXTREME"] as const
       const targetIndex = difficultyOrder.indexOf(targetDifficulty)
       const actualIndex = difficultyOrder.indexOf(analysis.difficulty)
 
-      // Accept if difficulty is close to target
       if (Math.abs(actualIndex - targetIndex) <= 1) {
         return Option.fromNullable(puzzle)
       }
@@ -163,7 +144,6 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
       return Option.none()
     })
 
-    // Generate puzzle with target difficulty
     const generate = Effect.fn("PuzzleGenerator.generate")(function* (options?: GenerateOptions) {
       const opts = options ?? {
         difficulty: "MEDIUM",
@@ -178,17 +158,14 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
       const maxAttempts = opts.maxAttempts ?? 10000
 
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        // Generate full grid
         const fullGrid = yield* generateFullGrid()
 
-        // Remove cells to create puzzle
         const puzzleOpt = yield* removeCells(fullGrid, targetDifficulty, symmetric, minClues)
 
         if (Option.isSome(puzzleOpt)) {
           const puzzle = puzzleOpt.value
           const analysis = yield* difficultyScorer.analyzePuzzle(puzzle)
 
-          // Check solution is unique
           const solutionResult = yield* solutionFinder
             .solve(puzzle)
             .pipe(
@@ -201,7 +178,6 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
             continue
           }
 
-          // Return puzzle matching the schema type
           return {
             grid: puzzle.toString(),
             solution: fullGrid.toString(),

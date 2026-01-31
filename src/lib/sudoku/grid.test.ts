@@ -5,7 +5,6 @@ import { Effect } from "effect"
 import { SudokuGrid } from "./grid.ts"
 import { SolutionFinder } from "./solver.ts"
 
-// Helper to convert tdoku dot notation to our zero-based format
 const convertTdokuFormat = (puzzle: string): string => {
   return puzzle.replaceAll(".", "0")
 }
@@ -21,9 +20,8 @@ describe("SudokuGrid", () => {
       const puzzle = convertTdokuFormat(tdokuPuzzle)
       const program = Effect.gen(function* () {
         const grid = yield* SudokuGrid.fromString(puzzle)
-        // toString() converts zeros back to dots
         expect(grid.toString()).toBe(tdokuPuzzle)
-        expect(grid.countGivens()).toBe(34) // Count non-zero cells
+        expect(grid.countGivens()).toBe(34)
       })
 
       await Effect.runPromise(program)
@@ -81,7 +79,6 @@ describe("SudokuGrid", () => {
   })
 
   describe("tdoku puzzle with 125 solutions", () => {
-    // Line 29 from tdoku test file
     const tdokuPuzzle =
       "8.........95.......67..........2.485...4.3192......736...651947...732518...894263"
 
@@ -91,7 +88,6 @@ describe("SudokuGrid", () => {
         const solutionFinder = yield* SolutionFinder
         const grid = yield* SudokuGrid.fromString(puzzle)
 
-        // Use countSolutions to get actual count (solve() caps at 2)
         const solutionCount = yield* solutionFinder.countSolutions(grid, 200)
 
         expect(solutionCount).toBe(125)

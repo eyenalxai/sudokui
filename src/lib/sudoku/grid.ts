@@ -1,4 +1,3 @@
-// Re-export all grid modules
 export {
   GRID_SIZE,
   ROW_SIZE,
