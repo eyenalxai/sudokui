@@ -91,3 +91,31 @@ export const Technique = Schema.Literal(
 )
 
 export type Technique = typeof Technique.Type
+
+export const CellIndex = Schema.Number.pipe(
+  Schema.int(),
+  Schema.between(0, 80),
+  Schema.brand("CellIndex"),
+)
+export type CellIndex = typeof CellIndex.Type
+
+export const CellValue = Schema.Number.pipe(
+  Schema.int(),
+  Schema.between(1, 9),
+  Schema.brand("CellValue"),
+)
+export type CellValue = typeof CellValue.Type
+
+export const CellElimination = Schema.Struct({
+  index: CellIndex,
+  values: Schema.Array(CellValue),
+})
+export type CellElimination = typeof CellElimination.Type
+
+export const TechniqueMove = Schema.Struct({
+  technique: Technique,
+  cellIndex: CellIndex,
+  value: CellValue,
+  eliminations: Schema.Array(CellElimination),
+})
+export type TechniqueMove = typeof TechniqueMove.Type
