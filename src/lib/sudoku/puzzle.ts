@@ -25,6 +25,14 @@ export const Candidates = Schema.Number.pipe(
 )
 export type Candidates = typeof Candidates.Type
 
+export class InvalidCellIndexError extends Schema.TaggedError<InvalidCellIndexError>()(
+  "InvalidCellIndexError",
+  {
+    index: Schema.Number,
+    message: Schema.String,
+  },
+) {}
+
 export class InvalidPuzzleError extends Schema.TaggedError<InvalidPuzzleError>()(
   "InvalidPuzzleError",
   {

@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
 
 import { getCandidatesArray, getSingleCandidate } from "./grid/candidates.ts"
 import { SudokuGrid } from "./grid/class.ts"
@@ -17,7 +17,11 @@ const countSolutionsImpl = (grid: SudokuGrid, maxCount: number): number => {
       const newGrid = g.clone()
       for (const idx of singles) {
         const value = getSingleCandidate(newGrid.getCandidates(idx))
-        if (value !== null && !newGrid.setCell(idx, value)) {
+        const setResult = Option.match(value, {
+          onNone: () => true,
+          onSome: (candidate) => newGrid.setCell(idx, candidate),
+        })
+        if (!setResult) {
           return
         }
       }
@@ -26,62 +30,70 @@ const countSolutionsImpl = (grid: SudokuGrid, maxCount: number): number => {
     }
 
     const minCell = g.findMinCandidatesCell()
-    if (!minCell) {
-      count++
-      return
-    }
-
-    if (minCell.count === 0) {
-      return
-    }
-
-    const candidates = getCandidatesArray(g.getCandidates(minCell.index))
-    for (const value of candidates) {
-      const newGrid = g.clone()
-      if (newGrid.setCell(minCell.index, value)) {
-        solveRecursive(newGrid)
-      }
-    }
+    Option.match(minCell, {
+      onNone: () => {
+        count++
+      },
+      onSome: ({ index, count: candidateCount }) => {
+        if (candidateCount === 0) {
+          return
+        }
+        const candidates = getCandidatesArray(g.getCandidates(index))
+        for (const value of candidates) {
+          const newGrid = g.clone()
+          if (newGrid.setCell(index, value)) {
+            solveRecursive(newGrid)
+          }
+        }
+      },
+    })
   }
 
   solveRecursive(grid)
   return count
 }
 
-const findSolutionImpl = (grid: SudokuGrid): SudokuGrid | null => {
+const findSolutionImpl = (grid: SudokuGrid): Option.Option<SudokuGrid> => {
   const singles = grid.findNakedSingles()
   if (singles.length > 0) {
     const newGrid = grid.clone()
     for (const idx of singles) {
       const value = getSingleCandidate(newGrid.getCandidates(idx))
-      if (value !== null && !newGrid.setCell(idx, value)) {
-        return null
+      const setResult = Option.match(value, {
+        onNone: () => true,
+        onSome: (candidate) => newGrid.setCell(idx, candidate),
+      })
+      if (!setResult) {
+        return Option.none()
       }
     }
     return findSolutionImpl(newGrid)
   }
 
   if (grid.isComplete()) {
-    return grid
+    return Option.some(grid)
   }
 
   const minCell = grid.findMinCandidatesCell()
-  if (!minCell || minCell.count === 0) {
-    return null
-  }
-
-  const candidates = getCandidatesArray(grid.getCandidates(minCell.index))
-  for (const value of candidates) {
-    const newGrid = grid.clone()
-    if (newGrid.setCell(minCell.index, value)) {
-      const result = findSolutionImpl(newGrid)
-      if (result !== null) {
-        return result
+  return Option.match(minCell, {
+    onNone: () => Option.none(),
+    onSome: ({ index, count: candidateCount }) => {
+      if (candidateCount === 0) {
+        return Option.none()
       }
-    }
-  }
-
-  return null
+      const candidates = getCandidatesArray(grid.getCandidates(index))
+      for (const value of candidates) {
+        const newGrid = grid.clone()
+        if (newGrid.setCell(index, value)) {
+          const result = findSolutionImpl(newGrid)
+          if (Option.isSome(result)) {
+            return result
+          }
+        }
+      }
+      return Option.none()
+    },
+  })
 }
 
 const toSolutionStep = (move: TechniqueMove): SolutionStep => ({
@@ -116,16 +128,16 @@ export class SolutionFinder extends Effect.Service<SolutionFinder>()("SolutionFi
       }
 
       const solution = findSolutionImpl(grid)
-      if (!solution) {
-        return yield* Effect.fail(new SolveError({ message: "Failed to find solution" }))
-      }
-
-      return {
-        solved: true,
-        solutionCount: 1,
-        steps: [],
-        finalGrid: solution.toString(),
-      }
+      return yield* Option.match(solution, {
+        onNone: () => Effect.fail(new SolveError({ message: "Failed to find solution" })),
+        onSome: (finalGrid) =>
+          Effect.succeed({
+            solved: true,
+            solutionCount: 1,
+            steps: [],
+            finalGrid: finalGrid.toString(),
+          }),
+      })
     }),
 
     solveLogically: Effect.fn("SolutionFinder.solveLogically")(function* (grid: SudokuGrid) {
@@ -139,26 +151,22 @@ export class SolutionFinder extends Effect.Service<SolutionFinder>()("SolutionFi
 
       while (true) {
         const move = yield* detector.findNextMove(workingGrid).pipe(
-          Effect.matchEffect({
-            onSuccess: (nextMove) => Effect.succeed(nextMove),
-            onFailure: () => Effect.succeed(null),
-          }),
+          Effect.map(Option.some),
+          Effect.catchTag("NoMoveFoundError", () => Effect.succeed(Option.none())),
         )
 
-        if (move === null) {
+        if (Option.isNone(move)) {
           break
         }
 
-        steps.push(toSolutionStep(move))
-        const newGrid = yield* detector.applyMove(workingGrid, move).pipe(
-          Effect.catchAll((error) => {
-            const message =
-              typeof error === "object" && error !== null && "message" in error
-                ? String(error.message)
-                : "Failed to apply logical move"
-            return Effect.fail(new SolveError({ message }))
-          }),
-        )
+        steps.push(toSolutionStep(move.value))
+        const newGrid = yield* detector
+          .applyMove(workingGrid, move.value)
+          .pipe(
+            Effect.catchTag("InvalidGridError", (error) =>
+              Effect.fail(new SolveError({ message: error.message })),
+            ),
+          )
         workingGrid = newGrid
       }
 

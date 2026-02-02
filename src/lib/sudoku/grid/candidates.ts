@@ -1,3 +1,5 @@
+import { Option } from "effect"
+
 import { CANDIDATE_MASKS, GRID_SIZE } from "./constants.ts"
 
 export const countCandidates = (candidates: number): number => {
@@ -10,16 +12,16 @@ export const countCandidates = (candidates: number): number => {
   return count
 }
 
-export const getSingleCandidate = (candidates: number): number | null => {
+export const getSingleCandidate = (candidates: number): Option.Option<number> => {
   if (countCandidates(candidates) === 1) {
     for (let i = 1; i <= GRID_SIZE; i++) {
       const mask = CANDIDATE_MASKS[i]
       if (mask !== undefined && candidates & mask) {
-        return i
+        return Option.some(i)
       }
     }
   }
-  return null
+  return Option.none()
 }
 
 export const getCandidatesArray = (candidates: number): number[] => {

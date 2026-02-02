@@ -1,4 +1,6 @@
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
+
+import { InvalidCellIndexError } from "../puzzle.ts"
 
 import { countCandidates, getSingleCandidate } from "./candidates.ts"
 import { ALL_CANDIDATES, CANDIDATE_MASKS, GRID_SIZE, TOTAL_CELLS } from "./constants.ts"
@@ -33,12 +35,17 @@ export class SudokuGrid {
     }))
   }
 
-  private getCellData(index: number): Cell {
+  getCellData(index: number): Effect.Effect<Cell, InvalidCellIndexError> {
     const cell = this.cells[index]
     if (cell === undefined) {
-      throw new Error(`Invalid cell index: ${index}`)
+      return Effect.fail(
+        new InvalidCellIndexError({
+          index,
+          message: `Invalid cell index: ${index}`,
+        }),
+      )
     }
-    return cell
+    return Effect.succeed(cell)
   }
 
   static fromValues(values: readonly number[]): SudokuGrid {
@@ -67,27 +74,44 @@ export class SudokuGrid {
   clone(): SudokuGrid {
     const newGrid = new SudokuGrid()
     for (let i = 0; i < TOTAL_CELLS; i++) {
-      newGrid.cells[i] = { ...this.getCellData(i) }
+      const cell = this.cells[i]
+      if (cell !== undefined) {
+        newGrid.cells[i] = { ...cell }
+      }
     }
     return newGrid
   }
 
   getCell(index: number): number {
-    return this.getCellData(index).value
+    const cell = this.cells[index]
+    if (cell === undefined) {
+      return 0
+    }
+    return cell.value
   }
 
   getCandidates(index: number): number {
-    return this.getCellData(index).candidates
+    const cell = this.cells[index]
+    if (cell === undefined) {
+      return 0
+    }
+    return cell.candidates
   }
 
   isFixed(index: number): boolean {
-    return this.getCellData(index).fixed
+    const cell = this.cells[index]
+    if (cell === undefined) {
+      return false
+    }
+    return cell.fixed
   }
 
   setCell(index: number, value: number, fixed = false): boolean {
     if (value < 0 || value > GRID_SIZE) return false
+    if (index < 0 || index >= TOTAL_CELLS) return false
 
-    const cell = this.getCellData(index)
+    const cell = this.cells[index]
+    if (cell === undefined) return false
     cell.value = value
     cell.fixed = fixed
     if (value === 0) {
@@ -96,14 +120,18 @@ export class SudokuGrid {
 
     const peers = getPeers(index)
     for (const peer of peers) {
-      if (this.getCellData(peer).value === value) {
+      const peerCell = this.cells[peer]
+      if (peerCell !== undefined && peerCell.value === value) {
         return false
       }
     }
 
     cell.candidates = getCandidateMask(value)
     for (const peer of peers) {
-      const peerCell = this.getCellData(peer)
+      const peerCell = this.cells[peer]
+      if (peerCell === undefined) {
+        return false
+      }
       if (peerCell.value === 0) {
         peerCell.candidates &= ~getCandidateMask(value)
         if (peerCell.candidates === 0) {
@@ -116,7 +144,8 @@ export class SudokuGrid {
   }
 
   removeCandidate(index: number, value: number): boolean {
-    const cell = this.getCellData(index)
+    const cell = this.cells[index]
+    if (cell === undefined) return false
     if (cell.value !== 0) return true
 
     cell.candidates &= ~getCandidateMask(value)
@@ -140,12 +169,13 @@ export class SudokuGrid {
     return this.cells.filter((cell) => cell.fixed).length
   }
 
-  findMinCandidatesCell(): { index: number; count: number } | null {
+  findMinCandidatesCell(): Option.Option<{ index: number; count: number }> {
     let minIndex = -1
     let minCount = 10
 
     for (let i = 0; i < TOTAL_CELLS; i++) {
-      const cell = this.getCellData(i)
+      const cell = this.cells[i]
+      if (cell === undefined) continue
       if (cell.value === 0) {
         const count = countCandidates(cell.candidates)
         if (count < minCount) {
@@ -156,14 +186,15 @@ export class SudokuGrid {
       }
     }
 
-    if (minIndex === -1) return null
-    return { index: minIndex, count: minCount }
+    if (minIndex === -1) return Option.none()
+    return Option.some({ index: minIndex, count: minCount })
   }
 
   findNakedSingles(): number[] {
     const singles: number[] = []
     for (let i = 0; i < TOTAL_CELLS; i++) {
-      const cell = this.getCellData(i)
+      const cell = this.cells[i]
+      if (cell === undefined) continue
       if (cell.value === 0 && countCandidates(cell.candidates) === 1) {
         singles.push(i)
       }
@@ -180,10 +211,11 @@ export class SudokuGrid {
       iterations++
       const singles = this.findNakedSingles()
       for (const index of singles) {
-        const cell = this.getCellData(index)
+        const cell = this.cells[index]
+        if (cell === undefined) return false
         const value = getSingleCandidate(cell.candidates)
-        if (value !== null) {
-          if (!this.setCell(index, value)) {
+        if (Option.isSome(value)) {
+          if (!this.setCell(index, value.value)) {
             return false
           }
           changed = true
@@ -203,11 +235,13 @@ export class SudokuGrid {
 
   isValid(): boolean {
     for (let i = 0; i < TOTAL_CELLS; i++) {
-      const cell = this.getCellData(i)
+      const cell = this.cells[i]
+      if (cell === undefined) return false
       if (cell.value !== 0) {
         const peers = getPeers(i)
         for (const peer of peers) {
-          if (this.getCellData(peer).value === cell.value) {
+          const peerCell = this.cells[peer]
+          if (peerCell !== undefined && peerCell.value === cell.value) {
             return false
           }
         }

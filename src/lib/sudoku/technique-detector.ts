@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect"
+import { Effect, Option, ParseResult, Schema } from "effect"
 
 import { SudokuGrid } from "./grid/class.ts"
 import { TechniqueMove } from "./technique.ts"
@@ -21,7 +21,9 @@ export class InvalidGridError extends Schema.TaggedError<InvalidGridError>()("In
   message: Schema.String,
 }) {}
 
-type TechniqueFinder = (grid: SudokuGrid) => TechniqueMove | null
+type TechniqueFinder = (
+  grid: SudokuGrid,
+) => Effect.Effect<Option.Option<TechniqueMove>, ParseResult.ParseError>
 
 interface TechniqueInfo {
   readonly name: string
@@ -49,34 +51,54 @@ const checkGridValid = (grid: SudokuGrid): Effect.Effect<void, InvalidGridError>
   return Effect.void
 }
 
-const findNextMoveImpl = (grid: SudokuGrid): Effect.Effect<TechniqueMove, NoMoveFoundError> =>
+const runTechnique = (findTechnique: TechniqueFinder, grid: SudokuGrid) =>
+  findTechnique(grid).pipe(
+    Effect.catchTag("ParseError", (error) =>
+      Effect.fail(
+        new InvalidGridError({
+          message:
+            typeof error === "object" && error !== null && "message" in error
+              ? String(error.message)
+              : "Failed to decode technique move",
+        }),
+      ),
+    ),
+  )
+
+const findNextMoveImpl = (
+  grid: SudokuGrid,
+): Effect.Effect<TechniqueMove, NoMoveFoundError | InvalidGridError> =>
   Effect.gen(function* () {
     for (const technique of TECHNIQUES) {
       const findTechnique = technique.find
-      const move = findTechnique(grid)
-      if (move !== null) {
-        yield* Effect.logDebug(`Found ${move.technique} move`)
-        return move
+      const move = yield* runTechnique(findTechnique, grid)
+      if (Option.isSome(move)) {
+        return move.value
       }
-      yield* Effect.logDebug(`${technique.name}: no move found`)
     }
 
     return yield* Effect.fail(new NoMoveFoundError({ message: "No logical move found" }))
   })
 
-const findAllMovesImpl = (grid: SudokuGrid): Effect.Effect<ReadonlyArray<TechniqueMove>> => {
-  const moves: TechniqueMove[] = []
+const findAllMovesImpl = (
+  grid: SudokuGrid,
+): Effect.Effect<ReadonlyArray<TechniqueMove>, InvalidGridError> =>
+  Effect.gen(function* () {
+    const moves: TechniqueMove[] = []
 
-  for (const technique of TECHNIQUES) {
-    const findTechnique = technique.find
-    const move = findTechnique(grid)
-    if (move !== null) {
-      moves.push(move)
+    for (const technique of TECHNIQUES) {
+      const findTechnique = technique.find
+      const move = yield* runTechnique(findTechnique, grid)
+      Option.match(move, {
+        onNone: () => {},
+        onSome: (foundMove) => {
+          moves.push(foundMove)
+        },
+      })
     }
-  }
 
-  return Effect.succeed(moves)
-}
+    return moves
+  })
 
 const PLACEMENT_TECHNIQUES = new Set(["FULL_HOUSE", "NAKED_SINGLE", "HIDDEN_SINGLE"])
 

@@ -36,6 +36,9 @@ describe("SudokuGrid", () => {
 
         expect(result.solved).toBe(true)
         expect(result.solutionCount).toBe(1)
+        if (!result.solved || !("finalGrid" in result)) {
+          throw new Error("Expected puzzle to be solved")
+        }
         expect(result.finalGrid).toBe(expectedSolution)
       })
 
@@ -71,6 +74,9 @@ describe("SudokuGrid", () => {
 
         expect(result.solved).toBe(true)
         expect(result.solutionCount).toBe(1)
+        if (!result.solved || !("finalGrid" in result)) {
+          throw new Error("Expected puzzle to be solved")
+        }
         expect(result.finalGrid).toBe(expectedSolution)
       })
 
