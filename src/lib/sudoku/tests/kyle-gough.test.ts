@@ -1,8 +1,10 @@
 import { describe, it, expect } from "bun:test"
+import { existsSync } from "node:fs"
 
 import { Effect } from "effect"
 
 import { SudokuGrid } from "../grid/class.ts"
+import { TOTAL_CELLS } from "../grid/constants.ts"
 import { SolutionFinder } from "../solver.ts"
 
 const loadPuzzlesFromCSV = async (filePath: string, sampleSize?: number): Promise<string[]> => {
@@ -11,7 +13,7 @@ const loadPuzzlesFromCSV = async (filePath: string, sampleSize?: number): Promis
   const lines = content
     .split("\n")
     .map((line: string) => line.replace("\r", "").trim())
-    .filter((line: string) => line.length === 81)
+    .filter((line: string) => line.length === TOTAL_CELLS)
 
   if (sampleSize !== undefined && sampleSize < lines.length) {
     const shuffled = [...lines].toSorted(() => Math.random() - 0.5)
@@ -43,7 +45,7 @@ const solvePuzzle = (
     const startTime = performance.now()
     const hasUnique = yield* solutionFinder.hasUniqueSolution(grid)
     const solveStart = performance.now()
-    const result = yield* solutionFinder.solve(grid).pipe(Effect.orDie)
+    const result = yield* solutionFinder.solveBruteForce(grid).pipe(Effect.orDie)
     const endTime = performance.now()
 
     const uniqueCheckTime = solveStart - startTime
@@ -59,8 +61,9 @@ const solvePuzzle = (
   })
 }
 
-describe("Kyle Gough Solving Benchmarks", () => {
-  const testDir = "/home/ulezot/Projects/misc/sudoku-kyle-gough/tests"
+const testDir = "/home/ulezot/Projects/misc/sudoku-kyle-gough/tests"
+
+describe.skipIf(!existsSync(testDir))("Kyle Gough Solving Benchmarks", () => {
   const sampleSize = 2
 
   describe("X-Wing puzzles", () => {

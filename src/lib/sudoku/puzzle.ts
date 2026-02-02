@@ -1,25 +1,26 @@
 import { Schema } from "effect"
 
 import { DifficultyLevel } from "./difficulty.ts"
+import { ALL_CANDIDATES, GRID_SIZE, TOTAL_CELLS } from "./grid/constants.ts"
 import { Technique } from "./technique.ts"
 
 export const CellIndex = Schema.Number.pipe(
   Schema.int(),
-  Schema.between(0, 80),
+  Schema.between(0, TOTAL_CELLS - 1),
   Schema.brand("CellIndex"),
 )
 export type CellIndex = typeof CellIndex.Type
 
 export const CellValue = Schema.Number.pipe(
   Schema.int(),
-  Schema.between(0, 9),
+  Schema.between(0, GRID_SIZE),
   Schema.brand("CellValue"),
 )
 export type CellValue = typeof CellValue.Type
 
 export const Candidates = Schema.Number.pipe(
   Schema.int(),
-  Schema.between(0, 511),
+  Schema.between(0, ALL_CANDIDATES),
   Schema.brand("Candidates"),
 )
 export type Candidates = typeof Candidates.Type

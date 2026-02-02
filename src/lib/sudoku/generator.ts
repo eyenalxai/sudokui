@@ -3,6 +3,7 @@ import { Effect, Option, Random, Chunk } from "effect"
 import { DifficultyLevel } from "./difficulty.ts"
 import { getCandidatesArray } from "./grid/candidates.ts"
 import { SudokuGrid } from "./grid/class.ts"
+import { TOTAL_CELLS } from "./grid/constants.ts"
 import { GenerateOptions, GenerationError } from "./puzzle.ts"
 import { DifficultyScorer } from "./scorer.ts"
 import { SolutionFinder } from "./solver.ts"
@@ -17,13 +18,13 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
     const generateFullGrid = Effect.fn("PuzzleGenerator.generateFullGrid")(function* () {
       const grid = new SudokuGrid()
 
-      const indicesChunk = yield* Random.shuffle(Array.from({ length: 81 }, (_, i) => i))
+      const indicesChunk = yield* Random.shuffle(Array.from({ length: TOTAL_CELLS }, (_, i) => i))
       const indices = Chunk.toArray(indicesChunk)
 
       const stack: Array<{ pos: number; candidates: number[]; candidateIdx: number }> = []
       let currentPos = 0
 
-      while (currentPos < 81) {
+      while (currentPos < TOTAL_CELLS) {
         const idx = indices[currentPos]
         if (idx === undefined) break
 
@@ -91,7 +92,7 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
     ) {
       const puzzle = fullGrid.clone()
 
-      const indicesChunk = yield* Random.shuffle(Array.from({ length: 81 }, (_, i) => i))
+      const indicesChunk = yield* Random.shuffle(Array.from({ length: TOTAL_CELLS }, (_, i) => i))
       const indices = Chunk.toArray(indicesChunk)
 
       const used = new Set<number>()
@@ -100,8 +101,8 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
         if (used.has(idx)) continue
         if (puzzle.getCell(idx) === 0) continue
 
-        if (symmetric && idx !== 40) {
-          const symmetricIdx = 80 - idx
+        if (symmetric && idx !== Math.floor(TOTAL_CELLS / 2)) {
+          const symmetricIdx = TOTAL_CELLS - 1 - idx
           if (puzzle.getCell(symmetricIdx) === 0) continue
         }
 
@@ -110,8 +111,8 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
         used.add(idx)
 
         let symmetricValue = 0
-        if (symmetric && idx !== 40) {
-          const symmetricIdx = 80 - idx
+        if (symmetric && idx !== Math.floor(TOTAL_CELLS / 2)) {
+          const symmetricIdx = TOTAL_CELLS - 1 - idx
           symmetricValue = puzzle.getCell(symmetricIdx)
           puzzle.setCell(symmetricIdx, 0)
           used.add(symmetricIdx)
@@ -121,8 +122,8 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
 
         if (!isUnique) {
           puzzle.setCell(idx, value)
-          if (symmetric && idx !== 40) {
-            puzzle.setCell(80 - idx, symmetricValue)
+          if (symmetric && idx !== Math.floor(TOTAL_CELLS / 2)) {
+            puzzle.setCell(TOTAL_CELLS - 1 - idx, symmetricValue)
           }
         }
 
@@ -168,7 +169,7 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
           const analysis = yield* difficultyScorer.analyzePuzzle(puzzle)
 
           const solutionResult = yield* solutionFinder
-            .solve(puzzle)
+            .solveBruteForce(puzzle)
             .pipe(
               Effect.catchTag("SolveError", () =>
                 Effect.succeed({ solved: false, solutionCount: 0, steps: [] }),

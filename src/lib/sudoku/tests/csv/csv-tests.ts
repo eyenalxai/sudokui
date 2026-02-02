@@ -1,6 +1,7 @@
 import { Effect } from "effect"
 
 import { SudokuGrid } from "../../grid/class.ts"
+import { TOTAL_CELLS } from "../../grid/constants.ts"
 import { InvalidGridError, TechniqueDetector } from "../../technique-detector.ts"
 
 export interface PuzzleData {
@@ -34,8 +35,8 @@ export const loadPuzzlesFromCSV = async (filePath: string): Promise<PuzzleData[]
       if (
         puzzle !== undefined &&
         solution !== undefined &&
-        puzzle.length === 81 &&
-        solution.length === 81
+        puzzle.length === TOTAL_CELLS &&
+        solution.length === TOTAL_CELLS
       ) {
         puzzles.push({ puzzle, solution })
       }

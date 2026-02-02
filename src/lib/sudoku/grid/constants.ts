@@ -1,7 +1,8 @@
-export const GRID_SIZE = 81
-export const ROW_SIZE = 9
-export const COL_SIZE = 9
+export const GRID_SIZE = 9
+export const ROW_SIZE = GRID_SIZE
+export const COL_SIZE = GRID_SIZE
 export const BLOCK_SIZE = 3
+export const TOTAL_CELLS = GRID_SIZE * GRID_SIZE
 
 export const CANDIDATE_MASKS = [
   0b000000000, // 0 - not valid

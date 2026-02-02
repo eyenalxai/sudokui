@@ -32,7 +32,7 @@ describe("SudokuGrid", () => {
       const program = Effect.gen(function* () {
         const solutionFinder = yield* SolutionFinder
         const grid = yield* SudokuGrid.fromString(puzzle)
-        const result = yield* solutionFinder.solve(grid)
+        const result = yield* solutionFinder.solveBruteForce(grid)
 
         expect(result.solved).toBe(true)
         expect(result.solutionCount).toBe(1)
@@ -67,7 +67,7 @@ describe("SudokuGrid", () => {
       const program = Effect.gen(function* () {
         const solutionFinder = yield* SolutionFinder
         const grid = yield* SudokuGrid.fromString(puzzle)
-        const result = yield* solutionFinder.solve(grid)
+        const result = yield* solutionFinder.solveBruteForce(grid)
 
         expect(result.solved).toBe(true)
         expect(result.solutionCount).toBe(1)

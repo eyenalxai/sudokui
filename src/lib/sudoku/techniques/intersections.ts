@@ -1,7 +1,7 @@
 import { Schema } from "effect"
 
 import { SudokuGrid } from "../grid/class.ts"
-import { CANDIDATE_MASKS } from "../grid/constants.ts"
+import { BLOCK_SIZE, CANDIDATE_MASKS, GRID_SIZE } from "../grid/constants.ts"
 import { getBlockIndices } from "../grid/helpers.ts"
 import { CellElimination, CellIndex, CellValue, TechniqueMove } from "../technique.ts"
 
@@ -13,6 +13,7 @@ const makeCellElimination = (index: number, values: readonly number[]): CellElim
 })
 
 const getMask = (value: number): number => CANDIDATE_MASKS[value] ?? 0
+const BLOCK_AREA = GRID_SIZE * BLOCK_SIZE
 
 /**
  * Pointing Pairs/Triples (LOCKED_PAIR, LOCKED_TRIPLE)
@@ -20,19 +21,9 @@ const getMask = (value: number): number => CANDIDATE_MASKS[value] ?? 0
  * it can be eliminated from that row or column outside the box.
  */
 const findPointingInBox = (grid: SudokuGrid, boxStartIndex: number): TechniqueMove | null => {
-  const boxIndices = [
-    boxStartIndex,
-    boxStartIndex + 1,
-    boxStartIndex + 2,
-    boxStartIndex + 9,
-    boxStartIndex + 10,
-    boxStartIndex + 11,
-    boxStartIndex + 18,
-    boxStartIndex + 19,
-    boxStartIndex + 20,
-  ]
+  const boxIndices = getBlockIndices(boxStartIndex)
 
-  for (let value = 1; value <= 9; value++) {
+  for (let value = 1; value <= GRID_SIZE; value++) {
     const mask = getMask(value)
     if (mask === 0) continue
 
@@ -52,17 +43,17 @@ const findPointingInBox = (grid: SudokuGrid, boxStartIndex: number): TechniqueMo
     const firstCell = cellsWithCandidate[0]
     if (firstCell === undefined) continue
 
-    const row = Math.floor(firstCell / 9)
-    const allInSameRow = cellsWithCandidate.every((idx) => Math.floor(idx / 9) === row)
+    const row = Math.floor(firstCell / GRID_SIZE)
+    const allInSameRow = cellsWithCandidate.every((idx) => Math.floor(idx / GRID_SIZE) === row)
 
     if (allInSameRow) {
       const eliminations: CellElimination[] = []
-      const boxCol = Math.floor((boxStartIndex % 9) / 3)
+      const boxCol = Math.floor((boxStartIndex % GRID_SIZE) / BLOCK_SIZE)
 
-      for (let c = 0; c < 9; c++) {
-        const idx = row * 9 + c
+      for (let c = 0; c < GRID_SIZE; c++) {
+        const idx = row * GRID_SIZE + c
         if (grid.getCell(idx) !== 0) continue
-        if (Math.floor((idx % 9) / 3) === boxCol) continue
+        if (Math.floor((idx % GRID_SIZE) / BLOCK_SIZE) === boxCol) continue
         if (cellsWithCandidate.includes(idx)) continue
 
         const candidates = grid.getCandidates(idx)
@@ -81,17 +72,17 @@ const findPointingInBox = (grid: SudokuGrid, boxStartIndex: number): TechniqueMo
       }
     }
 
-    const col = firstCell % 9
-    const allInSameCol = cellsWithCandidate.every((idx) => idx % 9 === col)
+    const col = firstCell % GRID_SIZE
+    const allInSameCol = cellsWithCandidate.every((idx) => idx % GRID_SIZE === col)
 
     if (allInSameCol) {
       const eliminations: CellElimination[] = []
-      const boxRow = Math.floor(boxStartIndex / 27)
+      const boxRow = Math.floor(boxStartIndex / BLOCK_AREA)
 
-      for (let r = 0; r < 9; r++) {
-        const idx = r * 9 + col
+      for (let r = 0; r < GRID_SIZE; r++) {
+        const idx = r * GRID_SIZE + col
         if (grid.getCell(idx) !== 0) continue
-        if (Math.floor(idx / 27) === boxRow) continue
+        if (Math.floor(idx / BLOCK_AREA) === boxRow) continue
         if (cellsWithCandidate.includes(idx)) continue
 
         const candidates = grid.getCandidates(idx)
@@ -120,14 +111,14 @@ const findPointingInBox = (grid: SudokuGrid, boxStartIndex: number): TechniqueMo
  * the candidate can be eliminated from the rest of that box.
  */
 const findBoxLineReductionInRow = (grid: SudokuGrid, row: number): TechniqueMove | null => {
-  for (let value = 1; value <= 9; value++) {
+  for (let value = 1; value <= GRID_SIZE; value++) {
     const mask = getMask(value)
     if (mask === 0) continue
 
     const cellsWithCandidate: number[] = []
 
-    for (let c = 0; c < 9; c++) {
-      const idx = row * 9 + c
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const idx = row * GRID_SIZE + c
       if (grid.getCell(idx) === 0 && (grid.getCandidates(idx) & mask) !== 0) {
         cellsWithCandidate.push(idx)
       }
@@ -138,9 +129,13 @@ const findBoxLineReductionInRow = (grid: SudokuGrid, row: number): TechniqueMove
     const firstCell = cellsWithCandidate[0]
     if (firstCell === undefined) continue
 
-    const boxStart = Math.floor(firstCell / 27) * 27 + Math.floor((firstCell % 9) / 3) * 3
+    const boxStart =
+      Math.floor(firstCell / BLOCK_AREA) * BLOCK_AREA +
+      Math.floor((firstCell % GRID_SIZE) / BLOCK_SIZE) * BLOCK_SIZE
     const allInSameBox = cellsWithCandidate.every((idx) => {
-      const cellBoxStart = Math.floor(idx / 27) * 27 + Math.floor((idx % 9) / 3) * 3
+      const cellBoxStart =
+        Math.floor(idx / BLOCK_AREA) * BLOCK_AREA +
+        Math.floor((idx % GRID_SIZE) / BLOCK_SIZE) * BLOCK_SIZE
       return cellBoxStart === boxStart
     })
 
@@ -151,7 +146,7 @@ const findBoxLineReductionInRow = (grid: SudokuGrid, row: number): TechniqueMove
 
     for (const idx of boxIndices) {
       if (grid.getCell(idx) !== 0) continue
-      if (Math.floor(idx / 9) === row) continue
+      if (Math.floor(idx / GRID_SIZE) === row) continue
       if (cellsWithCandidate.includes(idx)) continue
 
       if ((grid.getCandidates(idx) & mask) !== 0) {
@@ -173,14 +168,14 @@ const findBoxLineReductionInRow = (grid: SudokuGrid, row: number): TechniqueMove
 }
 
 const findBoxLineReductionInCol = (grid: SudokuGrid, col: number): TechniqueMove | null => {
-  for (let value = 1; value <= 9; value++) {
+  for (let value = 1; value <= GRID_SIZE; value++) {
     const mask = getMask(value)
     if (mask === 0) continue
 
     const cellsWithCandidate: number[] = []
 
-    for (let r = 0; r < 9; r++) {
-      const idx = r * 9 + col
+    for (let r = 0; r < GRID_SIZE; r++) {
+      const idx = r * GRID_SIZE + col
       if (grid.getCell(idx) === 0 && (grid.getCandidates(idx) & mask) !== 0) {
         cellsWithCandidate.push(idx)
       }
@@ -191,9 +186,12 @@ const findBoxLineReductionInCol = (grid: SudokuGrid, col: number): TechniqueMove
     const firstCell = cellsWithCandidate[0]
     if (firstCell === undefined) continue
 
-    const boxStart = Math.floor(firstCell / 27) * 27 + Math.floor(col / 3) * 3
+    const boxStart =
+      Math.floor(firstCell / BLOCK_AREA) * BLOCK_AREA + Math.floor(col / BLOCK_SIZE) * BLOCK_SIZE
     const allInSameBox = cellsWithCandidate.every((idx) => {
-      const cellBoxStart = Math.floor(idx / 27) * 27 + Math.floor((idx % 9) / 3) * 3
+      const cellBoxStart =
+        Math.floor(idx / BLOCK_AREA) * BLOCK_AREA +
+        Math.floor((idx % GRID_SIZE) / BLOCK_SIZE) * BLOCK_SIZE
       return cellBoxStart === boxStart
     })
 
@@ -204,7 +202,7 @@ const findBoxLineReductionInCol = (grid: SudokuGrid, col: number): TechniqueMove
 
     for (const idx of boxIndices) {
       if (grid.getCell(idx) !== 0) continue
-      if (idx % 9 === col) continue
+      if (idx % GRID_SIZE === col) continue
       if (cellsWithCandidate.includes(idx)) continue
 
       if ((grid.getCandidates(idx) & mask) !== 0) {
@@ -232,9 +230,9 @@ const findBoxLineReductionInCol = (grid: SudokuGrid, col: number): TechniqueMove
  * that row or column outside the box.
  */
 export const findPointingCandidates = (grid: SudokuGrid): TechniqueMove | null => {
-  for (let blockRow = 0; blockRow < 3; blockRow++) {
-    for (let blockCol = 0; blockCol < 3; blockCol++) {
-      const boxStartIndex = blockRow * 27 + blockCol * 3
+  for (let blockRow = 0; blockRow < BLOCK_SIZE; blockRow++) {
+    for (let blockCol = 0; blockCol < BLOCK_SIZE; blockCol++) {
+      const boxStartIndex = blockRow * BLOCK_AREA + blockCol * BLOCK_SIZE
       const result = findPointingInBox(grid, boxStartIndex)
       if (result !== null) return result
     }
@@ -248,12 +246,12 @@ export const findPointingCandidates = (grid: SudokuGrid): TechniqueMove | null =
  * the candidate can be eliminated from the rest of that box.
  */
 export const findLockedCandidates = (grid: SudokuGrid): TechniqueMove | null => {
-  for (let row = 0; row < 9; row++) {
+  for (let row = 0; row < GRID_SIZE; row++) {
     const result = findBoxLineReductionInRow(grid, row)
     if (result !== null) return result
   }
 
-  for (let col = 0; col < 9; col++) {
+  for (let col = 0; col < GRID_SIZE; col++) {
     const result = findBoxLineReductionInCol(grid, col)
     if (result !== null) return result
   }

@@ -1,12 +1,12 @@
 import { Effect } from "effect"
 
 import { countCandidates, getSingleCandidate } from "./candidates.ts"
-import { ALL_CANDIDATES, CANDIDATE_MASKS } from "./constants.ts"
+import { ALL_CANDIDATES, CANDIDATE_MASKS, GRID_SIZE, TOTAL_CELLS } from "./constants.ts"
 import { getPeers } from "./helpers.ts"
 import { parsePuzzle, gridToString } from "./parsing.ts"
 
 const getCandidateMask = (value: number): number => {
-  if (value >= 1 && value <= 9) {
+  if (value >= 1 && value <= GRID_SIZE) {
     const mask = CANDIDATE_MASKS[value]
     if (mask === undefined) {
       return 0
@@ -26,7 +26,7 @@ export class SudokuGrid {
   cells: Cell[]
 
   constructor() {
-    this.cells = Array.from({ length: 81 }, () => ({
+    this.cells = Array.from({ length: TOTAL_CELLS }, () => ({
       value: 0,
       candidates: ALL_CANDIDATES,
       fixed: false,
@@ -43,7 +43,7 @@ export class SudokuGrid {
 
   static fromValues(values: readonly number[]): SudokuGrid {
     const grid = new SudokuGrid()
-    for (let i = 0; i < 81; i++) {
+    for (let i = 0; i < TOTAL_CELLS; i++) {
       const value = values[i]
       if (value !== undefined && value !== 0) {
         grid.setCell(i, value, true)
@@ -55,7 +55,7 @@ export class SudokuGrid {
   static fromString = Effect.fn("SudokuGrid.fromString")(function* (puzzle: string) {
     const values = yield* parsePuzzle(puzzle)
     const grid = new SudokuGrid()
-    for (let i = 0; i < 81; i++) {
+    for (let i = 0; i < TOTAL_CELLS; i++) {
       const value = values[i]
       if (value !== undefined && value !== 0) {
         grid.setCell(i, value, true)
@@ -66,7 +66,7 @@ export class SudokuGrid {
 
   clone(): SudokuGrid {
     const newGrid = new SudokuGrid()
-    for (let i = 0; i < 81; i++) {
+    for (let i = 0; i < TOTAL_CELLS; i++) {
       newGrid.cells[i] = { ...this.getCellData(i) }
     }
     return newGrid
@@ -85,31 +85,29 @@ export class SudokuGrid {
   }
 
   setCell(index: number, value: number, fixed = false): boolean {
-    if (value < 0 || value > 9) return false
-
-    if (value !== 0) {
-      const peers = getPeers(index)
-      for (const peer of peers) {
-        if (this.getCellData(peer).value === value) {
-          return false
-        }
-      }
-    }
+    if (value < 0 || value > GRID_SIZE) return false
 
     const cell = this.getCellData(index)
     cell.value = value
     cell.fixed = fixed
+    if (value === 0) {
+      return true
+    }
 
-    if (value !== 0) {
-      cell.candidates = getCandidateMask(value)
-      const peers = getPeers(index)
-      for (const peer of peers) {
-        const peerCell = this.getCellData(peer)
-        if (peerCell.value === 0) {
-          peerCell.candidates &= ~getCandidateMask(value)
-          if (peerCell.candidates === 0) {
-            return false
-          }
+    const peers = getPeers(index)
+    for (const peer of peers) {
+      if (this.getCellData(peer).value === value) {
+        return false
+      }
+    }
+
+    cell.candidates = getCandidateMask(value)
+    for (const peer of peers) {
+      const peerCell = this.getCellData(peer)
+      if (peerCell.value === 0) {
+        peerCell.candidates &= ~getCandidateMask(value)
+        if (peerCell.candidates === 0) {
+          return false
         }
       }
     }
@@ -146,7 +144,7 @@ export class SudokuGrid {
     let minIndex = -1
     let minCount = 10
 
-    for (let i = 0; i < 81; i++) {
+    for (let i = 0; i < TOTAL_CELLS; i++) {
       const cell = this.getCellData(i)
       if (cell.value === 0) {
         const count = countCandidates(cell.candidates)
@@ -164,7 +162,7 @@ export class SudokuGrid {
 
   findNakedSingles(): number[] {
     const singles: number[] = []
-    for (let i = 0; i < 81; i++) {
+    for (let i = 0; i < TOTAL_CELLS; i++) {
       const cell = this.getCellData(i)
       if (cell.value === 0 && countCandidates(cell.candidates) === 1) {
         singles.push(i)
@@ -175,8 +173,11 @@ export class SudokuGrid {
 
   setNakedSingles(): boolean {
     let changed = true
-    while (changed) {
+    let iterations = 0
+    const maxIterations = TOTAL_CELLS
+    while (changed && iterations < maxIterations) {
       changed = false
+      iterations++
       const singles = this.findNakedSingles()
       for (const index of singles) {
         const cell = this.getCellData(index)
@@ -201,7 +202,7 @@ export class SudokuGrid {
   }
 
   isValid(): boolean {
-    for (let i = 0; i < 81; i++) {
+    for (let i = 0; i < TOTAL_CELLS; i++) {
       const cell = this.getCellData(i)
       if (cell.value !== 0) {
         const peers = getPeers(i)

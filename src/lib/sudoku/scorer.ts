@@ -1,8 +1,8 @@
 import { Effect } from "effect"
 
 import { DifficultyLevel, DIFFICULTY_THRESHOLDS } from "./difficulty.ts"
-import { countCandidates } from "./grid/candidates.ts"
 import { SudokuGrid } from "./grid/class.ts"
+import { SolutionFinder } from "./solver.ts"
 import { TECHNIQUE_DIFFICULTY } from "./technique-difficulty.ts"
 import { TECHNIQUE_SCORES } from "./technique-scores.ts"
 import { Technique } from "./technique.ts"
@@ -48,49 +48,11 @@ const determineDifficultyImpl = (techniques: Technique[]): DifficultyLevel => {
   return maxDifficulty
 }
 
-const analyzePuzzleImpl = (
-  grid: SudokuGrid,
-): {
-  difficulty: DifficultyLevel
-  score: number
-  techniques: Technique[]
-} => {
-  const techniques: Technique[] = ["NAKED_SINGLE", "HIDDEN_SINGLE"]
-
-  let cellsWithManyCandidates = 0
-  let maxCandidates = 0
-
-  for (let i = 0; i < 81; i++) {
-    if (grid.getCell(i) === 0) {
-      const candidates = countCandidates(grid.getCandidates(i))
-      if (candidates > maxCandidates) {
-        maxCandidates = candidates
-      }
-      if (candidates > 4) {
-        cellsWithManyCandidates++
-      }
-    }
-  }
-
-  if (cellsWithManyCandidates > 20) {
-    techniques.push("NAKED_PAIR")
-  }
-  if (cellsWithManyCandidates > 30) {
-    techniques.push("NAKED_TRIPLE")
-    techniques.push("HIDDEN_PAIR")
-  }
-  if (maxCandidates >= 7) {
-    techniques.push("X_WING")
-  }
-
-  const score = calculateScoreImpl(techniques)
-  const difficulty = determineDifficultyImpl(techniques)
-
-  return { difficulty, score, techniques }
-}
+const isTechnique = (value: string): value is Technique => Object.hasOwn(TECHNIQUE_SCORES, value)
 
 export class DifficultyScorer extends Effect.Service<DifficultyScorer>()("DifficultyScorer", {
   accessors: true,
+  dependencies: [SolutionFinder.Default],
   succeed: {
     calculateScore: (techniques: Technique[]): Effect.Effect<number> =>
       Effect.succeed(calculateScoreImpl(techniques)),
@@ -98,12 +60,23 @@ export class DifficultyScorer extends Effect.Service<DifficultyScorer>()("Diffic
     determineDifficulty: (techniques: Technique[]): Effect.Effect<DifficultyLevel> =>
       Effect.succeed(determineDifficultyImpl(techniques)),
 
-    analyzePuzzle: (
-      grid: SudokuGrid,
-    ): Effect.Effect<{
-      difficulty: DifficultyLevel
-      score: number
-      techniques: Technique[]
-    }> => Effect.succeed(analyzePuzzleImpl(grid)),
+    analyzePuzzle: Effect.fn("DifficultyScorer.analyzePuzzle")(function* (grid: SudokuGrid) {
+      const solutionFinder = yield* SolutionFinder
+      const result = yield* solutionFinder
+        .solveLogically(grid)
+        .pipe(
+          Effect.catchTag("SolveError", () =>
+            Effect.succeed({ solved: false, solutionCount: 0, steps: [] }),
+          ),
+        )
+
+      const techniques = result.steps.flatMap((step) =>
+        isTechnique(step.technique) ? [step.technique] : [],
+      )
+      const score = calculateScoreImpl(techniques)
+      const difficulty = determineDifficultyImpl(techniques)
+
+      return { difficulty, score, techniques }
+    }),
   },
 }) {}

@@ -2,6 +2,7 @@ import { Schema } from "effect"
 
 import { getCandidatesArray } from "../grid/candidates.ts"
 import { SudokuGrid } from "../grid/class.ts"
+import { BLOCK_SIZE, GRID_SIZE } from "../grid/constants.ts"
 import { getBlockIndices, getColIndices, getRowIndices } from "../grid/helpers.ts"
 import { CellElimination, CellIndex, CellValue, TechniqueMove } from "../technique.ts"
 
@@ -11,6 +12,7 @@ const makeCellElimination = (index: number, values: readonly number[]): CellElim
   index: makeCellIndex(index),
   values: values.map((v) => makeCellValue(v)),
 })
+const BLOCK_AREA = GRID_SIZE * BLOCK_SIZE
 
 type NakedTechnique = "NAKED_PAIR" | "NAKED_TRIPLE" | "NAKED_QUADRUPLE"
 type HiddenTechnique = "HIDDEN_PAIR" | "HIDDEN_TRIPLE" | "HIDDEN_QUADRUPLE"
@@ -149,7 +151,7 @@ const findHiddenSubsetInUnit = (
 
   const valueCells = new Map<number, number[]>()
 
-  for (let v = 1; v <= 9; v++) {
+  for (let v = 1; v <= GRID_SIZE; v++) {
     const cellsWithValue: number[] = []
 
     for (const cell of emptyCells) {
@@ -234,48 +236,47 @@ const findSubsetInAllUnits = (
     const technique = nakedTechniques[size]
     if (technique === undefined) return null
 
-    for (let row = 0; row < 9; row++) {
-      const result = findNakedSubsetInUnit(grid, getRowIndices(row * 9), size, technique)
+    for (let row = 0; row < GRID_SIZE; row++) {
+      const result = findNakedSubsetInUnit(grid, getRowIndices(row * GRID_SIZE), size, technique)
       if (result !== null) return result
     }
 
-    for (let col = 0; col < 9; col++) {
+    for (let col = 0; col < GRID_SIZE; col++) {
       const result = findNakedSubsetInUnit(grid, getColIndices(col), size, technique)
       if (result !== null) return result
     }
 
-    for (let blockRow = 0; blockRow < 3; blockRow++) {
-      for (let blockCol = 0; blockCol < 3; blockCol++) {
+    for (let blockRow = 0; blockRow < BLOCK_SIZE; blockRow++) {
+      for (let blockCol = 0; blockCol < BLOCK_SIZE; blockCol++) {
         const result = findNakedSubsetInUnit(
           grid,
-          getBlockIndices(blockRow * 27 + blockCol * 3),
+          getBlockIndices(blockRow * BLOCK_AREA + blockCol * BLOCK_SIZE),
           size,
           technique,
         )
         if (result !== null) return result
       }
     }
-
     return null
   }
   const technique = hiddenTechniques[size]
   if (technique === undefined) return null
 
-  for (let row = 0; row < 9; row++) {
-    const result = findHiddenSubsetInUnit(grid, getRowIndices(row * 9), size, technique)
+  for (let row = 0; row < GRID_SIZE; row++) {
+    const result = findHiddenSubsetInUnit(grid, getRowIndices(row * GRID_SIZE), size, technique)
     if (result !== null) return result
   }
 
-  for (let col = 0; col < 9; col++) {
+  for (let col = 0; col < GRID_SIZE; col++) {
     const result = findHiddenSubsetInUnit(grid, getColIndices(col), size, technique)
     if (result !== null) return result
   }
 
-  for (let blockRow = 0; blockRow < 3; blockRow++) {
-    for (let blockCol = 0; blockCol < 3; blockCol++) {
+  for (let blockRow = 0; blockRow < BLOCK_SIZE; blockRow++) {
+    for (let blockCol = 0; blockCol < BLOCK_SIZE; blockCol++) {
       const result = findHiddenSubsetInUnit(
         grid,
-        getBlockIndices(blockRow * 27 + blockCol * 3),
+        getBlockIndices(blockRow * BLOCK_AREA + blockCol * BLOCK_SIZE),
         size,
         technique,
       )
@@ -285,7 +286,6 @@ const findSubsetInAllUnits = (
 
   return null
 }
-
 export const findNakedPair = (grid: SudokuGrid): TechniqueMove | null =>
   findSubsetInAllUnits(grid, 2, "naked")
 export const findNakedTriple = (grid: SudokuGrid): TechniqueMove | null =>
