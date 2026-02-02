@@ -3,8 +3,8 @@ import { existsSync } from "node:fs"
 
 import { Effect } from "effect"
 
-import { SudokuGrid } from "../grid/class.ts"
 import { TOTAL_CELLS } from "../grid/constants.ts"
+import { SudokuGrid } from "../grid/sudoku-grid.ts"
 import { SolutionFinder } from "../solver.ts"
 
 const loadPuzzlesFromCSV = async (filePath: string, sampleSize?: number): Promise<string[]> => {

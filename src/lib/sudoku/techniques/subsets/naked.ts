@@ -2,7 +2,7 @@ import type { CellData, NakedTechnique, RawElimination } from "./utils.ts"
 import { Effect, Option, ParseResult } from "effect"
 
 import { getCandidatesArray } from "../../grid/candidates.ts"
-import { SudokuGrid } from "../../grid/class.ts"
+import { SudokuGrid } from "../../grid/sudoku-grid.ts"
 import { TechniqueMove } from "../../technique.ts"
 
 import { getCombinations, makeCellElimination, makeCellIndex, makeCellValue } from "./utils.ts"

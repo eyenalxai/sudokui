@@ -2,8 +2,8 @@ import { Effect, Option, Random, Chunk } from "effect"
 
 import { DifficultyLevel } from "./difficulty.ts"
 import { getCandidatesArray } from "./grid/candidates.ts"
-import { SudokuGrid } from "./grid/class.ts"
 import { TOTAL_CELLS } from "./grid/constants.ts"
+import { SudokuGrid } from "./grid/sudoku-grid.ts"
 import { GenerateOptions, GenerationError } from "./puzzle.ts"
 import { DifficultyScorer } from "./scorer.ts"
 import { SolutionFinder } from "./solver.ts"
@@ -14,9 +14,33 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
   effect: Effect.gen(function* () {
     const solutionFinder = yield* SolutionFinder
     const difficultyScorer = yield* DifficultyScorer
+    const toGenerationFailure =
+      (difficulty: DifficultyLevel) =>
+      (error: { message: string }): Effect.Effect<never, GenerationError> =>
+        Effect.fail(new GenerationError({ message: error.message, difficulty }))
 
     const generateFullGrid = Effect.fn("PuzzleGenerator.generateFullGrid")(function* () {
       const grid = new SudokuGrid()
+      const toFailure = toGenerationFailure("MEDIUM")
+      const setCellOrFail = (index: number, value: number) =>
+        grid.setCell(index, value).pipe(
+          Effect.catchTags({
+            CellConflictError: toFailure,
+            NoCandidatesRemainingError: toFailure,
+            InvalidCellIndexError: toFailure,
+            InvalidCellValueError: toFailure,
+          }),
+        )
+      const trySetCell = (index: number, value: number) =>
+        grid.setCell(index, value).pipe(
+          Effect.as(true),
+          Effect.catchTags({
+            CellConflictError: () => Effect.succeed(false),
+            NoCandidatesRemainingError: () => Effect.succeed(false),
+            InvalidCellIndexError: toFailure,
+            InvalidCellValueError: toFailure,
+          }),
+        )
 
       const indicesChunk = yield* Random.shuffle(Array.from({ length: TOTAL_CELLS }, (_, i) => i))
       const indices = Chunk.toArray(indicesChunk)
@@ -33,7 +57,7 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
           if (state) {
             const idx = indices[state.pos]
             if (idx !== undefined) {
-              grid.setCell(idx, 0)
+              yield* setCellOrFail(idx, 0)
             }
           }
         }
@@ -57,7 +81,7 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
         let found = false
         for (let i = state.candidateIdx; i < candidates.length; i++) {
           const value = candidates[i]
-          if (value !== undefined && grid.setCell(idx, value)) {
+          if (value !== undefined && (yield* trySetCell(idx, value))) {
             state.candidateIdx = i + 1
             found = true
             break
@@ -67,7 +91,7 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
         if (found) {
           currentPos++
         } else {
-          grid.setCell(idx, 0)
+          yield* setCellOrFail(idx, 0)
           stack.pop()
           currentPos--
           if (currentPos < 0) {
@@ -91,6 +115,16 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
       minClues: number,
     ) {
       const puzzle = fullGrid.clone()
+      const toFailure = toGenerationFailure(targetDifficulty)
+      const setCellOrFail = (index: number, value: number) =>
+        puzzle.setCell(index, value).pipe(
+          Effect.catchTags({
+            CellConflictError: toFailure,
+            NoCandidatesRemainingError: toFailure,
+            InvalidCellIndexError: toFailure,
+            InvalidCellValueError: toFailure,
+          }),
+        )
 
       const indicesChunk = yield* Random.shuffle(Array.from({ length: TOTAL_CELLS }, (_, i) => i))
       const indices = Chunk.toArray(indicesChunk)
@@ -107,23 +141,23 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
         }
 
         const value = puzzle.getCell(idx)
-        puzzle.setCell(idx, 0)
+        yield* setCellOrFail(idx, 0)
         used.add(idx)
 
         let symmetricValue = 0
         if (symmetric && idx !== Math.floor(TOTAL_CELLS / 2)) {
           const symmetricIdx = TOTAL_CELLS - 1 - idx
           symmetricValue = puzzle.getCell(symmetricIdx)
-          puzzle.setCell(symmetricIdx, 0)
+          yield* setCellOrFail(symmetricIdx, 0)
           used.add(symmetricIdx)
         }
 
         const isUnique = yield* solutionFinder.hasUniqueSolution(puzzle)
 
         if (!isUnique) {
-          puzzle.setCell(idx, value)
+          yield* setCellOrFail(idx, value)
           if (symmetric && idx !== Math.floor(TOTAL_CELLS / 2)) {
-            puzzle.setCell(TOTAL_CELLS - 1 - idx, symmetricValue)
+            yield* setCellOrFail(TOTAL_CELLS - 1 - idx, symmetricValue)
           }
         }
 

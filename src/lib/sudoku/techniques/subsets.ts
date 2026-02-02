@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 
-import { SudokuGrid } from "../grid/class.ts"
+import { SudokuGrid } from "../grid/sudoku-grid.ts"
 
 import { findSubsetInAllUnits } from "./subsets/search.ts"
 

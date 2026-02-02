@@ -1,6 +1,6 @@
 import { Effect, Option, ParseResult, Schema } from "effect"
 
-import { SudokuGrid } from "./grid/class.ts"
+import { SudokuGrid } from "./grid/sudoku-grid.ts"
 import { TechniqueMove } from "./technique.ts"
 import { findLockedCandidates, findPointingCandidates } from "./techniques/intersections.ts"
 import { findFullHouse, findNakedSingle, findHiddenSingle } from "./techniques/singles.ts"
@@ -108,33 +108,39 @@ const applyMoveImpl = (
 ): Effect.Effect<SudokuGrid, InvalidGridError> => {
   const newGrid = grid.clone()
 
-  // Only set the cell for placement techniques (singles)
-  // Elimination-only techniques just remove candidates
-  if (PLACEMENT_TECHNIQUES.has(move.technique)) {
-    const success = newGrid.setCell(move.cellIndex, move.value)
-    if (!success) {
-      return Effect.fail(
-        new InvalidGridError({
-          message: `Failed to set cell ${move.cellIndex} to ${move.value}`,
+  return Effect.gen(function* () {
+    // Only set the cell for placement techniques (singles)
+    // Elimination-only techniques just remove candidates
+    if (PLACEMENT_TECHNIQUES.has(move.technique)) {
+      yield* newGrid.setCell(move.cellIndex, move.value).pipe(
+        Effect.catchTags({
+          CellConflictError: (error) =>
+            Effect.fail(new InvalidGridError({ message: error.message })),
+          InvalidCellIndexError: (error) =>
+            Effect.fail(new InvalidGridError({ message: error.message })),
+          InvalidCellValueError: (error) =>
+            Effect.fail(new InvalidGridError({ message: error.message })),
+          NoCandidatesRemainingError: (error) =>
+            Effect.fail(new InvalidGridError({ message: error.message })),
         }),
       )
     }
-  }
 
-  for (const elimination of move.eliminations) {
-    for (const value of elimination.values) {
-      const elimSuccess = newGrid.removeCandidate(elimination.index, value)
-      if (!elimSuccess) {
-        return Effect.fail(
-          new InvalidGridError({
-            message: `Failed to remove candidate ${value} from cell ${elimination.index}`,
+    for (const elimination of move.eliminations) {
+      for (const value of elimination.values) {
+        yield* newGrid.removeCandidate(elimination.index, value).pipe(
+          Effect.catchTags({
+            InvalidCellIndexError: (error) =>
+              Effect.fail(new InvalidGridError({ message: error.message })),
+            NoCandidatesRemainingError: (error) =>
+              Effect.fail(new InvalidGridError({ message: error.message })),
           }),
         )
       }
     }
-  }
 
-  return Effect.succeed(newGrid)
+    return newGrid
+  })
 }
 
 export class TechniqueDetector extends Effect.Service<TechniqueDetector>()("TechniqueDetector", {

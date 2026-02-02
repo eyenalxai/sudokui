@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test"
 
 import { Effect } from "effect"
 
-import { SudokuGrid } from "../grid/class.ts"
+import { SudokuGrid } from "../grid/sudoku-grid.ts"
 import { SolutionFinder } from "../solver.ts"
 
 const convertTdokuFormat = (puzzle: string): string => {

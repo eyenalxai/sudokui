@@ -2,8 +2,8 @@ import type { CellData, HiddenTechnique, RawElimination } from "./utils.ts"
 import { Effect, Option, ParseResult } from "effect"
 
 import { getCandidatesArray } from "../../grid/candidates.ts"
-import { SudokuGrid } from "../../grid/class.ts"
 import { GRID_SIZE } from "../../grid/constants.ts"
+import { SudokuGrid } from "../../grid/sudoku-grid.ts"
 import { TechniqueMove } from "../../technique.ts"
 
 import { getCombinations, makeCellElimination, makeCellIndex, makeCellValue } from "./utils.ts"

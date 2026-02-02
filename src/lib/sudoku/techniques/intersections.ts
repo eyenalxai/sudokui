@@ -1,8 +1,8 @@
 import { Effect, Option, ParseResult, Schema } from "effect"
 
-import { SudokuGrid } from "../grid/class.ts"
 import { BLOCK_SIZE, CANDIDATE_MASKS, GRID_SIZE } from "../grid/constants.ts"
 import { getBlockIndices } from "../grid/helpers.ts"
+import { SudokuGrid } from "../grid/sudoku-grid.ts"
 import { CellElimination, CellIndex, CellValue, TechniqueMove } from "../technique.ts"
 
 const makeCellIndex = (n: number) => Schema.decodeUnknown(CellIndex)(n)

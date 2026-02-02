@@ -2,6 +2,17 @@ import { Option } from "effect"
 
 import { CANDIDATE_MASKS, GRID_SIZE } from "./constants.ts"
 
+export const getCandidateMask = (value: number): number => {
+  if (value >= 1 && value <= GRID_SIZE) {
+    const mask = CANDIDATE_MASKS[value]
+    if (mask === undefined) {
+      return 0
+    }
+    return mask
+  }
+  return 0
+}
+
 export const countCandidates = (candidates: number): number => {
   let count = 0
   let mask = candidates

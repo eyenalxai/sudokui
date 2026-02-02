@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 
 import { DifficultyLevel, DIFFICULTY_THRESHOLDS } from "./difficulty.ts"
-import { SudokuGrid } from "./grid/class.ts"
+import { SudokuGrid } from "./grid/sudoku-grid.ts"
 import { SolutionFinder } from "./solver.ts"
 import { TECHNIQUE_DIFFICULTY } from "./technique-difficulty.ts"
 import { TECHNIQUE_SCORES } from "./technique-scores.ts"

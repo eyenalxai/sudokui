@@ -33,6 +33,33 @@ export class InvalidCellIndexError extends Schema.TaggedError<InvalidCellIndexEr
   },
 ) {}
 
+export class InvalidCellValueError extends Schema.TaggedError<InvalidCellValueError>()(
+  "InvalidCellValueError",
+  {
+    cellIndex: CellIndex,
+    value: Schema.Number,
+    message: Schema.String,
+  },
+) {}
+
+export class CellConflictError extends Schema.TaggedError<CellConflictError>()(
+  "CellConflictError",
+  {
+    cellIndex: CellIndex,
+    value: CellValue,
+    conflictingIndex: CellIndex,
+    message: Schema.String,
+  },
+) {}
+
+export class NoCandidatesRemainingError extends Schema.TaggedError<NoCandidatesRemainingError>()(
+  "NoCandidatesRemainingError",
+  {
+    cellIndex: CellIndex,
+    message: Schema.String,
+  },
+) {}
+
 export class InvalidPuzzleError extends Schema.TaggedError<InvalidPuzzleError>()(
   "InvalidPuzzleError",
   {

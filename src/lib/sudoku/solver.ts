@@ -1,100 +1,131 @@
 import { Effect, Option } from "effect"
 
 import { getCandidatesArray, getSingleCandidate } from "./grid/candidates.ts"
-import { SudokuGrid } from "./grid/class.ts"
+import { SudokuGrid } from "./grid/sudoku-grid.ts"
 import { SolutionStep, SolveError } from "./puzzle.ts"
 import { TechniqueDetector } from "./technique-detector.ts"
 import { TechniqueMove } from "./technique.ts"
 
-const countSolutionsImpl = (grid: SudokuGrid, maxCount: number): number => {
-  let count = 0
+const trySetCell = (
+  grid: SudokuGrid,
+  index: number,
+  value: number,
+): Effect.Effect<boolean, SolveError> =>
+  grid.setCell(index, value).pipe(
+    Effect.as(true),
+    Effect.catchTags({
+      CellConflictError: () => Effect.succeed(false),
+      NoCandidatesRemainingError: () => Effect.succeed(false),
+      InvalidCellIndexError: (error) => Effect.fail(new SolveError({ message: error.message })),
+      InvalidCellValueError: (error) => Effect.fail(new SolveError({ message: error.message })),
+    }),
+  )
 
-  const solveRecursive = (g: SudokuGrid): void => {
-    if (count >= maxCount) return
+const countSolutionsImpl = (
+  grid: SudokuGrid,
+  maxCount: number,
+): Effect.Effect<number, SolveError> =>
+  Effect.gen(function* () {
+    let count = 0
 
-    const singles = g.findNakedSingles()
+    const solveRecursive = (g: SudokuGrid): Effect.Effect<void, SolveError> =>
+      Effect.gen(function* () {
+        if (count >= maxCount) return
+
+        const singles = g.findNakedSingles()
+        if (singles.length > 0) {
+          const newGrid = g.clone()
+          for (const idx of singles) {
+            const value = getSingleCandidate(newGrid.getCandidates(idx))
+            const setResult = yield* Option.match(value, {
+              onNone: () => Effect.succeed(true),
+              onSome: (candidate) => trySetCell(newGrid, idx, candidate),
+            })
+            if (!setResult) {
+              return
+            }
+          }
+          yield* solveRecursive(newGrid)
+          return
+        }
+
+        const minCell = g.findMinCandidatesCell()
+        yield* Option.match(minCell, {
+          onNone: () => {
+            count++
+            return Effect.void
+          },
+          onSome: ({ index, count: candidateCount }) => {
+            if (candidateCount === 0) {
+              return Effect.void
+            }
+            const candidates = getCandidatesArray(g.getCandidates(index))
+            return Effect.forEach(
+              candidates,
+              (value) =>
+                Effect.gen(function* () {
+                  const newGrid = g.clone()
+                  const setResult = yield* trySetCell(newGrid, index, value)
+                  if (setResult) {
+                    yield* solveRecursive(newGrid)
+                  }
+                }),
+              { discard: true },
+            )
+          },
+        })
+      })
+
+    yield* solveRecursive(grid)
+    return count
+  })
+
+const findSolutionImpl = (grid: SudokuGrid): Effect.Effect<Option.Option<SudokuGrid>, SolveError> =>
+  Effect.gen(function* () {
+    const singles = grid.findNakedSingles()
     if (singles.length > 0) {
-      const newGrid = g.clone()
+      const newGrid = grid.clone()
       for (const idx of singles) {
         const value = getSingleCandidate(newGrid.getCandidates(idx))
-        const setResult = Option.match(value, {
-          onNone: () => true,
-          onSome: (candidate) => newGrid.setCell(idx, candidate),
+        const setResult = yield* Option.match(value, {
+          onNone: () => Effect.succeed(true),
+          onSome: (candidate) => trySetCell(newGrid, idx, candidate),
         })
         if (!setResult) {
-          return
+          return Option.none()
         }
       }
-      solveRecursive(newGrid)
-      return
+      return yield* findSolutionImpl(newGrid)
     }
 
-    const minCell = g.findMinCandidatesCell()
-    Option.match(minCell, {
-      onNone: () => {
-        count++
-      },
+    if (grid.isComplete()) {
+      return Option.some(grid)
+    }
+
+    const minCell = grid.findMinCandidatesCell()
+    return yield* Option.match(minCell, {
+      onNone: () => Effect.succeed(Option.none()),
       onSome: ({ index, count: candidateCount }) => {
         if (candidateCount === 0) {
-          return
+          return Effect.succeed(Option.none())
         }
-        const candidates = getCandidatesArray(g.getCandidates(index))
-        for (const value of candidates) {
-          const newGrid = g.clone()
-          if (newGrid.setCell(index, value)) {
-            solveRecursive(newGrid)
+        const candidates = getCandidatesArray(grid.getCandidates(index))
+        return Effect.gen(function* () {
+          for (const value of candidates) {
+            const newGrid = grid.clone()
+            const setResult = yield* trySetCell(newGrid, index, value)
+            if (setResult) {
+              const result = yield* findSolutionImpl(newGrid)
+              if (Option.isSome(result)) {
+                return result
+              }
+            }
           }
-        }
+          return Option.none()
+        })
       },
     })
-  }
-
-  solveRecursive(grid)
-  return count
-}
-
-const findSolutionImpl = (grid: SudokuGrid): Option.Option<SudokuGrid> => {
-  const singles = grid.findNakedSingles()
-  if (singles.length > 0) {
-    const newGrid = grid.clone()
-    for (const idx of singles) {
-      const value = getSingleCandidate(newGrid.getCandidates(idx))
-      const setResult = Option.match(value, {
-        onNone: () => true,
-        onSome: (candidate) => newGrid.setCell(idx, candidate),
-      })
-      if (!setResult) {
-        return Option.none()
-      }
-    }
-    return findSolutionImpl(newGrid)
-  }
-
-  if (grid.isComplete()) {
-    return Option.some(grid)
-  }
-
-  const minCell = grid.findMinCandidatesCell()
-  return Option.match(minCell, {
-    onNone: () => Option.none(),
-    onSome: ({ index, count: candidateCount }) => {
-      if (candidateCount === 0) {
-        return Option.none()
-      }
-      const candidates = getCandidatesArray(grid.getCandidates(index))
-      for (const value of candidates) {
-        const newGrid = grid.clone()
-        if (newGrid.setCell(index, value)) {
-          const result = findSolutionImpl(newGrid)
-          if (Option.isSome(result)) {
-            return result
-          }
-        }
-      }
-      return Option.none()
-    },
   })
-}
 
 const toSolutionStep = (move: TechniqueMove): SolutionStep => ({
   technique: move.technique,
@@ -106,18 +137,24 @@ export class SolutionFinder extends Effect.Service<SolutionFinder>()("SolutionFi
   accessors: true,
   dependencies: [TechniqueDetector.Default],
   succeed: {
-    countSolutions: (grid: SudokuGrid, maxCount: number): Effect.Effect<number> =>
-      Effect.succeed(countSolutionsImpl(grid, maxCount)),
+    countSolutions: Effect.fn("SolutionFinder.countSolutions")(function* (
+      grid: SudokuGrid,
+      maxCount: number,
+    ) {
+      return yield* countSolutionsImpl(grid, maxCount)
+    }),
 
-    hasUniqueSolution: (grid: SudokuGrid): Effect.Effect<boolean> =>
-      Effect.succeed(countSolutionsImpl(grid, 2) === 1),
+    hasUniqueSolution: Effect.fn("SolutionFinder.hasUniqueSolution")(function* (grid: SudokuGrid) {
+      const count = yield* countSolutionsImpl(grid, 2)
+      return count === 1
+    }),
 
     solveBruteForce: Effect.fn("SolutionFinder.solveBruteForce")(function* (grid: SudokuGrid) {
       if (!grid.isValid()) {
         return yield* Effect.fail(new SolveError({ message: "Invalid puzzle" }))
       }
 
-      const solutionCount = countSolutionsImpl(grid, 2)
+      const solutionCount = yield* countSolutionsImpl(grid, 2)
 
       if (solutionCount === 0) {
         return { solved: false, solutionCount: 0, steps: [] }
@@ -127,7 +164,7 @@ export class SolutionFinder extends Effect.Service<SolutionFinder>()("SolutionFi
         return { solved: false, solutionCount, steps: [] }
       }
 
-      const solution = findSolutionImpl(grid)
+      const solution = yield* findSolutionImpl(grid)
       return yield* Option.match(solution, {
         onNone: () => Effect.fail(new SolveError({ message: "Failed to find solution" })),
         onSome: (finalGrid) =>

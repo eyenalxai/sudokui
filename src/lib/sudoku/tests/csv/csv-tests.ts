@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 
-import { SudokuGrid } from "../../grid/class.ts"
 import { TOTAL_CELLS } from "../../grid/constants.ts"
+import { SudokuGrid } from "../../grid/sudoku-grid.ts"
 import { InvalidGridError, TechniqueDetector } from "../../technique-detector.ts"
 
 export interface PuzzleData {

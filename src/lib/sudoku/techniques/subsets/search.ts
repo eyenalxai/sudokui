@@ -1,9 +1,9 @@
 import type { HiddenTechnique, NakedTechnique } from "./utils.ts"
 import { Effect, Option, ParseResult } from "effect"
 
-import { SudokuGrid } from "../../grid/class.ts"
 import { BLOCK_SIZE, GRID_SIZE } from "../../grid/constants.ts"
 import { getBlockIndices, getColIndices, getRowIndices } from "../../grid/helpers.ts"
+import { SudokuGrid } from "../../grid/sudoku-grid.ts"
 import { TechniqueMove } from "../../technique.ts"
 
 import { findHiddenSubsetInUnit } from "./hidden.ts"
