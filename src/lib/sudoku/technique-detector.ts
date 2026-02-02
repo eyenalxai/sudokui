@@ -52,7 +52,8 @@ const checkGridValid = (grid: SudokuGrid): Effect.Effect<void, InvalidGridError>
 const findNextMoveImpl = (grid: SudokuGrid): Effect.Effect<TechniqueMove, NoMoveFoundError> =>
   Effect.gen(function* () {
     for (const technique of TECHNIQUES) {
-      const move = technique.find(grid)
+      const findTechnique = technique.find
+      const move = findTechnique(grid)
       if (move !== null) {
         yield* Effect.logDebug(`Found ${move.technique} move`)
         return move
@@ -67,7 +68,8 @@ const findAllMovesImpl = (grid: SudokuGrid): Effect.Effect<ReadonlyArray<Techniq
   const moves: TechniqueMove[] = []
 
   for (const technique of TECHNIQUES) {
-    const move = technique.find(grid)
+    const findTechnique = technique.find
+    const move = findTechnique(grid)
     if (move !== null) {
       moves.push(move)
     }

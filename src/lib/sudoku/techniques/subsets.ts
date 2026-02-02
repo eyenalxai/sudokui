@@ -48,6 +48,31 @@ interface CellData {
 }
 
 /**
+ * Collect eliminations for naked subset technique
+ */
+const collectEliminations = (
+  grid: SudokuGrid,
+  unitIndices: readonly number[],
+  subsetIndices: number[],
+  subsetValues: number[],
+): CellElimination[] => {
+  const eliminations: CellElimination[] = []
+
+  for (const idx of unitIndices) {
+    if (grid.getCell(idx) === 0 && !subsetIndices.includes(idx)) {
+      const cellCandidates = getCandidatesArray(grid.getCandidates(idx))
+      const valuesToEliminate = cellCandidates.filter((c) => subsetValues.includes(c))
+
+      if (valuesToEliminate.length > 0) {
+        eliminations.push(makeCellElimination(idx, valuesToEliminate))
+      }
+    }
+  }
+
+  return eliminations
+}
+
+/**
  * Naked Subsets: Find n cells in a unit that together contain exactly n candidates
  */
 const findNakedSubsetInUnit = (
@@ -82,28 +107,17 @@ const findNakedSubsetInUnit = (
       }
     }
 
-    if (unionCandidates.size === size) {
-      const values = Array.from(unionCandidates)
-      const eliminations: CellElimination[] = []
+    if (unionCandidates.size !== size) continue
 
-      for (const idx of unitIndices) {
-        if (grid.getCell(idx) === 0 && !indices.includes(idx)) {
-          const cellCandidates = getCandidatesArray(grid.getCandidates(idx))
-          const valuesToEliminate = cellCandidates.filter((c) => values.includes(c))
+    const values = Array.from(unionCandidates)
+    const eliminations = collectEliminations(grid, unitIndices, indices, values)
 
-          if (valuesToEliminate.length > 0) {
-            eliminations.push(makeCellElimination(idx, valuesToEliminate))
-          }
-        }
-      }
-
-      if (eliminations.length > 0 && values[0] !== undefined && indices[0] !== undefined) {
-        return {
-          technique,
-          cellIndex: makeCellIndex(indices[0]),
-          value: makeCellValue(values[0]),
-          eliminations,
-        }
+    if (eliminations.length > 0 && values[0] !== undefined && indices[0] !== undefined) {
+      return {
+        technique,
+        cellIndex: makeCellIndex(indices[0]),
+        value: makeCellValue(values[0]),
+        eliminations,
       }
     }
   }
