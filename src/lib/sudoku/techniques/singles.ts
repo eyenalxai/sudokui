@@ -3,11 +3,24 @@ import { Schema } from "effect"
 import { countCandidates, getSingleCandidate } from "../grid/candidates.ts"
 import { SudokuGrid } from "../grid/class.ts"
 import { CANDIDATE_MASKS } from "../grid/constants.ts"
-import { getRowIndices, getColIndices, getBlockIndices } from "../grid/helpers.ts"
+import { getRowIndices, getColIndices, getBlockIndices, getPeers } from "../grid/helpers.ts"
 import { CellIndex, CellValue, TechniqueMove } from "../technique.ts"
 
 const makeCellIndex = (n: number): CellIndex => Schema.decodeUnknownSync(CellIndex)(n)
 const makeCellValue = (n: number): CellValue => Schema.decodeUnknownSync(CellValue)(n)
+
+/**
+ * Check if a value is valid for a cell (no peer has this value)
+ */
+const isValidValue = (grid: SudokuGrid, index: number, value: number): boolean => {
+  const peers = getPeers(index)
+  for (const peer of peers) {
+    if (grid.getCell(peer) === value) {
+      return false
+    }
+  }
+  return true
+}
 
 const getMissingValueInUnit = (grid: SudokuGrid, indices: readonly number[]): CellValue | null => {
   const present = new Set<number>()
@@ -67,7 +80,8 @@ export const findNakedSingle = (grid: SudokuGrid): TechniqueMove | null => {
     const candidates = grid.getCandidates(i)
     if (countCandidates(candidates) === 1) {
       const value = getSingleCandidate(candidates)
-      if (value !== null) {
+      // Validate that the single candidate is actually valid (no peer has this value)
+      if (value !== null && isValidValue(grid, i, value)) {
         return {
           technique: "NAKED_SINGLE",
           cellIndex: makeCellIndex(i),
@@ -104,7 +118,8 @@ const findHiddenSingleInUnit = (
   }
 
   for (const [value, idx] of candidatePositions) {
-    if (idx !== -1) {
+    // Validate that the hidden single candidate is actually valid (no peer has this value)
+    if (idx !== -1 && isValidValue(grid, idx, value)) {
       return {
         technique: "HIDDEN_SINGLE",
         cellIndex: makeCellIndex(idx),
