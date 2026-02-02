@@ -25,9 +25,7 @@ describe("Hard Logical Solver", () => {
     const aggregated = aggregateResults(results)
     printResults("Hard", puzzles.length, aggregated)
 
-    // TODO: Fix solver to handle all hard puzzles (currently 96/100 pass)
-    // expect(aggregated.failed).toBe(0)
-    // expect(aggregated.solved).toBe(puzzles.length)
-    expect(aggregated.solved).toBeGreaterThanOrEqual(95) // At least 95% pass rate
+    expect(aggregated.failed).toBe(0)
+    expect(aggregated.solved).toBe(puzzles.length)
   })
 })

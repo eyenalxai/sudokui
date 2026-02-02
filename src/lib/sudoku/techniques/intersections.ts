@@ -57,12 +57,12 @@ const findPointingInBox = (grid: SudokuGrid, boxStartIndex: number): TechniqueMo
 
     if (allInSameRow) {
       const eliminations: CellElimination[] = []
-      const boxRow = Math.floor(boxStartIndex / 27)
+      const boxCol = Math.floor((boxStartIndex % 9) / 3)
 
       for (let c = 0; c < 9; c++) {
         const idx = row * 9 + c
         if (grid.getCell(idx) !== 0) continue
-        if (Math.floor(idx / 27) === boxRow) continue
+        if (Math.floor((idx % 9) / 3) === boxCol) continue
         if (cellsWithCandidate.includes(idx)) continue
 
         const candidates = grid.getCandidates(idx)
@@ -86,12 +86,12 @@ const findPointingInBox = (grid: SudokuGrid, boxStartIndex: number): TechniqueMo
 
     if (allInSameCol) {
       const eliminations: CellElimination[] = []
-      const boxCol = Math.floor((boxStartIndex % 9) / 3)
+      const boxRow = Math.floor(boxStartIndex / 27)
 
       for (let r = 0; r < 9; r++) {
         const idx = r * 9 + col
         if (grid.getCell(idx) !== 0) continue
-        if (Math.floor((idx % 9) / 3) === boxCol) continue
+        if (Math.floor(idx / 27) === boxRow) continue
         if (cellsWithCandidate.includes(idx)) continue
 
         const candidates = grid.getCandidates(idx)
