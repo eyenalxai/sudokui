@@ -16,7 +16,7 @@ describe("SudokuGrid", () => {
     const expectedSolution =
       "652483917978162435314975628825736149791824563436519872269348751547291386183657294"
 
-    it("should parse tdoku puzzle format", async () => {
+    it("should parse tdoku puzzle format", () => {
       const puzzle = convertTdokuFormat(tdokuPuzzle)
       const program = Effect.gen(function* () {
         const grid = yield* SudokuGrid.fromString(puzzle)
@@ -24,10 +24,10 @@ describe("SudokuGrid", () => {
         expect(grid.countGivens()).toBe(34)
       })
 
-      await Effect.runPromise(program)
+      Effect.runSync(program)
     })
 
-    it("should solve the puzzle correctly", async () => {
+    it("should solve the puzzle correctly", () => {
       const puzzle = convertTdokuFormat(tdokuPuzzle)
       const program = Effect.gen(function* () {
         const solutionFinder = yield* SolutionFinder
@@ -39,10 +39,10 @@ describe("SudokuGrid", () => {
         expect(result.finalGrid).toBe(expectedSolution)
       })
 
-      await Effect.runPromise(program.pipe(Effect.provide(SolutionFinder.Default)))
+      Effect.runSync(program.pipe(Effect.provide(SolutionFinder.Default)))
     })
 
-    it("should verify unique solution", async () => {
+    it("should verify unique solution", () => {
       const puzzle = convertTdokuFormat(tdokuPuzzle)
       const program = Effect.gen(function* () {
         const solutionFinder = yield* SolutionFinder
@@ -52,7 +52,7 @@ describe("SudokuGrid", () => {
         expect(hasUnique).toBe(true)
       })
 
-      await Effect.runPromise(program.pipe(Effect.provide(SolutionFinder.Default)))
+      Effect.runSync(program.pipe(Effect.provide(SolutionFinder.Default)))
     })
   })
 
@@ -62,7 +62,7 @@ describe("SudokuGrid", () => {
     const expectedSolution =
       "256734198891265374347198652514683729728519436963427581135942867689371245472856913"
 
-    it("should parse and solve puzzle #2", async () => {
+    it("should parse and solve puzzle #2", () => {
       const puzzle = convertTdokuFormat(tdokuPuzzle)
       const program = Effect.gen(function* () {
         const solutionFinder = yield* SolutionFinder
@@ -74,7 +74,7 @@ describe("SudokuGrid", () => {
         expect(result.finalGrid).toBe(expectedSolution)
       })
 
-      await Effect.runPromise(program.pipe(Effect.provide(SolutionFinder.Default)))
+      Effect.runSync(program.pipe(Effect.provide(SolutionFinder.Default)))
     })
   })
 
@@ -82,7 +82,7 @@ describe("SudokuGrid", () => {
     const tdokuPuzzle =
       "8.........95.......67..........2.485...4.3192......736...651947...732518...894263"
 
-    it("should detect multiple solutions", async () => {
+    it("should detect multiple solutions", () => {
       const puzzle = convertTdokuFormat(tdokuPuzzle)
       const program = Effect.gen(function* () {
         const solutionFinder = yield* SolutionFinder
@@ -93,10 +93,10 @@ describe("SudokuGrid", () => {
         expect(solutionCount).toBe(125)
       })
 
-      await Effect.runPromise(program.pipe(Effect.provide(SolutionFinder.Default)))
+      Effect.runSync(program.pipe(Effect.provide(SolutionFinder.Default)))
     })
 
-    it("should not have unique solution", async () => {
+    it("should not have unique solution", () => {
       const puzzle = convertTdokuFormat(tdokuPuzzle)
       const program = Effect.gen(function* () {
         const solutionFinder = yield* SolutionFinder
@@ -106,7 +106,7 @@ describe("SudokuGrid", () => {
         expect(hasUnique).toBe(false)
       })
 
-      await Effect.runPromise(program.pipe(Effect.provide(SolutionFinder.Default)))
+      Effect.runSync(program.pipe(Effect.provide(SolutionFinder.Default)))
     })
   })
 })

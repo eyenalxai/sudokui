@@ -2,6 +2,7 @@ import { Effect, Schema } from "effect"
 
 import { SudokuGrid } from "./grid/class.ts"
 import { TechniqueMove } from "./technique.ts"
+import { findLockedCandidates, findPointingCandidates } from "./techniques/intersections.ts"
 import { findFullHouse, findNakedSingle, findHiddenSingle } from "./techniques/singles.ts"
 
 export class NoMoveFoundError extends Schema.TaggedError<NoMoveFoundError>()("NoMoveFoundError", {
@@ -12,6 +13,14 @@ export class InvalidGridError extends Schema.TaggedError<InvalidGridError>()("In
   message: Schema.String,
 }) {}
 
+const ALL_TECHNIQUES = [
+  findFullHouse,
+  findNakedSingle,
+  findHiddenSingle,
+  findPointingCandidates,
+  findLockedCandidates,
+]
+
 const checkGridValid = (grid: SudokuGrid): Effect.Effect<void, InvalidGridError> => {
   if (!grid.isValid()) {
     return Effect.fail(new InvalidGridError({ message: "Grid is in invalid state" }))
@@ -20,9 +29,7 @@ const checkGridValid = (grid: SudokuGrid): Effect.Effect<void, InvalidGridError>
 }
 
 const findNextMoveImpl = (grid: SudokuGrid): Effect.Effect<TechniqueMove, NoMoveFoundError> => {
-  const techniques = [findFullHouse, findNakedSingle, findHiddenSingle]
-
-  for (const findTechnique of techniques) {
+  for (const findTechnique of ALL_TECHNIQUES) {
     const move = findTechnique(grid)
     if (move !== null) {
       return Effect.succeed(move)
@@ -34,9 +41,8 @@ const findNextMoveImpl = (grid: SudokuGrid): Effect.Effect<TechniqueMove, NoMove
 
 const findAllMovesImpl = (grid: SudokuGrid): Effect.Effect<ReadonlyArray<TechniqueMove>> => {
   const moves: TechniqueMove[] = []
-  const techniques = [findFullHouse, findNakedSingle, findHiddenSingle]
 
-  for (const findTechnique of techniques) {
+  for (const findTechnique of ALL_TECHNIQUES) {
     const move = findTechnique(grid)
     if (move !== null) {
       moves.push(move)

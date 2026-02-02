@@ -21,10 +21,21 @@ const loadPuzzlesFromCSV = async (filePath: string, sampleSize?: number): Promis
   return lines
 }
 
-const testPuzzleSolving = (
+interface PuzzleResult {
+  success: boolean
+  totalTime: number
+  uniqueCheckTime: number
+  solveTime: number
+  index: number
+}
+
+const solvePuzzle = (
   puzzle: string,
-  description: string,
-): Effect.Effect<void, never, SolutionFinder> => {
+): Effect.Effect<
+  { success: boolean; totalTime: number; uniqueCheckTime: number; solveTime: number },
+  never,
+  SolutionFinder
+> => {
   return Effect.gen(function* () {
     const solutionFinder = yield* SolutionFinder
     const grid = yield* SudokuGrid.fromString(puzzle).pipe(Effect.orDie)
@@ -39,13 +50,12 @@ const testPuzzleSolving = (
     const solveTime = endTime - solveStart
     const totalTime = endTime - startTime
 
-    console.log(
-      `  ${description}: ${totalTime.toFixed(2)}ms (unique: ${uniqueCheckTime.toFixed(2)}ms, solve: ${solveTime.toFixed(2)}ms)`,
-    )
-
-    expect(hasUnique).toBe(true)
-    expect(result.solved).toBe(true)
-    expect(result.solutionCount).toBe(1)
+    return {
+      success: hasUnique && result.solved && result.solutionCount === 1,
+      totalTime,
+      uniqueCheckTime,
+      solveTime,
+    }
   })
 }
 
@@ -57,17 +67,26 @@ describe("Kyle Gough Solving Benchmarks", () => {
     it("should solve X-Wing puzzle samples", async () => {
       const puzzles = await loadPuzzlesFromCSV(`${testDir}/xwing.csv`, sampleSize)
 
-      const program = Effect.gen(function* () {
-        console.log(`\nX-Wing puzzles (${puzzles.length} samples):`)
-        for (let i = 0; i < puzzles.length; i++) {
-          const puzzle = puzzles[i]
-          if (puzzle !== undefined) {
-            yield* testPuzzleSolving(puzzle, `Puzzle ${i + 1}`)
-          }
-        }
-      })
+      const results: PuzzleResult[] = []
+      for (let i = 0; i < puzzles.length; i++) {
+        const puzzle = puzzles[i]
+        if (puzzle === undefined) continue
+        const result = Effect.runSync(
+          solvePuzzle(puzzle).pipe(
+            Effect.map((r) => ({ ...r, index: i + 1 })),
+            Effect.provide(SolutionFinder.Default),
+          ),
+        )
+        results.push(result)
+      }
 
-      await Effect.runPromise(program.pipe(Effect.provide(SolutionFinder.Default)))
+      console.log(`\nX-Wing puzzles (${results.length} samples):`)
+      for (const result of results) {
+        console.log(
+          `  Puzzle ${result.index}: ${result.totalTime.toFixed(2)}ms (unique: ${result.uniqueCheckTime.toFixed(2)}ms, solve: ${result.solveTime.toFixed(2)}ms)`,
+        )
+        expect(result.success).toBe(true)
+      }
     })
   })
 
@@ -75,17 +94,26 @@ describe("Kyle Gough Solving Benchmarks", () => {
     it("should solve Y-Wing puzzle samples", async () => {
       const puzzles = await loadPuzzlesFromCSV(`${testDir}/ywing.csv`, sampleSize)
 
-      const program = Effect.gen(function* () {
-        console.log(`\nY-Wing puzzles (${puzzles.length} samples):`)
-        for (let i = 0; i < puzzles.length; i++) {
-          const puzzle = puzzles[i]
-          if (puzzle !== undefined) {
-            yield* testPuzzleSolving(puzzle, `Puzzle ${i + 1}`)
-          }
-        }
-      })
+      const results: PuzzleResult[] = []
+      for (let i = 0; i < puzzles.length; i++) {
+        const puzzle = puzzles[i]
+        if (puzzle === undefined) continue
+        const result = Effect.runSync(
+          solvePuzzle(puzzle).pipe(
+            Effect.map((r) => ({ ...r, index: i + 1 })),
+            Effect.provide(SolutionFinder.Default),
+          ),
+        )
+        results.push(result)
+      }
 
-      await Effect.runPromise(program.pipe(Effect.provide(SolutionFinder.Default)))
+      console.log(`\nY-Wing puzzles (${results.length} samples):`)
+      for (const result of results) {
+        console.log(
+          `  Puzzle ${result.index}: ${result.totalTime.toFixed(2)}ms (unique: ${result.uniqueCheckTime.toFixed(2)}ms, solve: ${result.solveTime.toFixed(2)}ms)`,
+        )
+        expect(result.success).toBe(true)
+      }
     })
   })
 
@@ -93,17 +121,26 @@ describe("Kyle Gough Solving Benchmarks", () => {
     it("should solve Swordfish puzzle samples", async () => {
       const puzzles = await loadPuzzlesFromCSV(`${testDir}/swordfish.csv`, sampleSize)
 
-      const program = Effect.gen(function* () {
-        console.log(`\nSwordfish puzzles (${puzzles.length} samples):`)
-        for (let i = 0; i < puzzles.length; i++) {
-          const puzzle = puzzles[i]
-          if (puzzle !== undefined) {
-            yield* testPuzzleSolving(puzzle, `Puzzle ${i + 1}`)
-          }
-        }
-      })
+      const results: PuzzleResult[] = []
+      for (let i = 0; i < puzzles.length; i++) {
+        const puzzle = puzzles[i]
+        if (puzzle === undefined) continue
+        const result = Effect.runSync(
+          solvePuzzle(puzzle).pipe(
+            Effect.map((r) => ({ ...r, index: i + 1 })),
+            Effect.provide(SolutionFinder.Default),
+          ),
+        )
+        results.push(result)
+      }
 
-      await Effect.runPromise(program.pipe(Effect.provide(SolutionFinder.Default)))
+      console.log(`\nSwordfish puzzles (${results.length} samples):`)
+      for (const result of results) {
+        console.log(
+          `  Puzzle ${result.index}: ${result.totalTime.toFixed(2)}ms (unique: ${result.uniqueCheckTime.toFixed(2)}ms, solve: ${result.solveTime.toFixed(2)}ms)`,
+        )
+        expect(result.success).toBe(true)
+      }
     })
   })
 
@@ -111,17 +148,26 @@ describe("Kyle Gough Solving Benchmarks", () => {
     it("should solve XYZ-Wing puzzle samples", async () => {
       const puzzles = await loadPuzzlesFromCSV(`${testDir}/xyzwing.csv`, sampleSize)
 
-      const program = Effect.gen(function* () {
-        console.log(`\nXYZ-Wing puzzles (${puzzles.length} samples):`)
-        for (let i = 0; i < puzzles.length; i++) {
-          const puzzle = puzzles[i]
-          if (puzzle !== undefined) {
-            yield* testPuzzleSolving(puzzle, `Puzzle ${i + 1}`)
-          }
-        }
-      })
+      const results: PuzzleResult[] = []
+      for (let i = 0; i < puzzles.length; i++) {
+        const puzzle = puzzles[i]
+        if (puzzle === undefined) continue
+        const result = Effect.runSync(
+          solvePuzzle(puzzle).pipe(
+            Effect.map((r) => ({ ...r, index: i + 1 })),
+            Effect.provide(SolutionFinder.Default),
+          ),
+        )
+        results.push(result)
+      }
 
-      await Effect.runPromise(program.pipe(Effect.provide(SolutionFinder.Default)))
+      console.log(`\nXYZ-Wing puzzles (${results.length} samples):`)
+      for (const result of results) {
+        console.log(
+          `  Puzzle ${result.index}: ${result.totalTime.toFixed(2)}ms (unique: ${result.uniqueCheckTime.toFixed(2)}ms, solve: ${result.solveTime.toFixed(2)}ms)`,
+        )
+        expect(result.success).toBe(true)
+      }
     })
   })
 
@@ -131,17 +177,26 @@ describe("Kyle Gough Solving Benchmarks", () => {
       const puzzles2 = await loadPuzzlesFromCSV(`${testDir}/diabolical2.csv`, 1)
       const puzzles = puzzles1.concat(puzzles2)
 
-      const program = Effect.gen(function* () {
-        console.log(`\nDiabolical puzzles (${puzzles.length} samples):`)
-        for (let i = 0; i < puzzles.length; i++) {
-          const puzzle = puzzles[i]
-          if (puzzle !== undefined) {
-            yield* testPuzzleSolving(puzzle, `Diabolical ${i + 1}`)
-          }
-        }
-      })
+      const results: PuzzleResult[] = []
+      for (let i = 0; i < puzzles.length; i++) {
+        const puzzle = puzzles[i]
+        if (puzzle === undefined) continue
+        const result = Effect.runSync(
+          solvePuzzle(puzzle).pipe(
+            Effect.map((r) => ({ ...r, index: i + 1 })),
+            Effect.provide(SolutionFinder.Default),
+          ),
+        )
+        results.push(result)
+      }
 
-      await Effect.runPromise(program.pipe(Effect.provide(SolutionFinder.Default)))
+      console.log(`\nDiabolical puzzles (${results.length} samples):`)
+      for (const result of results) {
+        console.log(
+          `  Diabolical ${result.index}: ${result.totalTime.toFixed(2)}ms (unique: ${result.uniqueCheckTime.toFixed(2)}ms, solve: ${result.solveTime.toFixed(2)}ms)`,
+        )
+        expect(result.success).toBe(true)
+      }
     })
   })
 })
