@@ -2,8 +2,8 @@ import { describe, it, expect } from "bun:test"
 
 import { Effect } from "effect"
 
-import { SudokuGrid } from "./grid/class.ts"
-import { SolutionFinder } from "./solver.ts"
+import { SudokuGrid } from "../grid/class.ts"
+import { SolutionFinder } from "../solver.ts"
 
 const convertTdokuFormat = (puzzle: string): string => {
   return puzzle.replaceAll(".", "0")
