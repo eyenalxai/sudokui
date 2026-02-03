@@ -1,9 +1,10 @@
 import { Effect, ParseResult, Schema } from "effect"
 
-import { CellElimination, CellIndex, CellValue } from "../../technique.ts"
+import { CellIndex } from "../../puzzle.ts"
+import { CellElimination, TechniqueCellValue } from "../../technique.ts"
 
 export const makeCellIndex = (n: number) => Schema.decodeUnknown(CellIndex)(n)
-export const makeCellValue = (n: number) => Schema.decodeUnknown(CellValue)(n)
+export const makeCellValue = (n: number) => Schema.decodeUnknown(TechniqueCellValue)(n)
 
 export type RawElimination = { index: number; values: readonly number[] }
 export const makeCellElimination = (

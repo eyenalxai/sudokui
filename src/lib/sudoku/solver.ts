@@ -4,86 +4,89 @@ import { getCandidatesArray, getSingleCandidate } from "./grid/candidates.ts"
 import { findMinCandidatesCell, findNakedSingles } from "./grid/search.ts"
 import { SudokuGrid } from "./grid/sudoku-grid.ts"
 import { isComplete, isValid } from "./grid/validation.ts"
-import { SolutionStep, SolveError } from "./puzzle.ts"
+import { InvalidCellIndexError, InvalidCellValueError, SolutionStep, SolveError } from "./puzzle.ts"
 import { TechniqueDetector } from "./technique-detector.ts"
-import { TechniqueMove } from "./technique.ts"
+import { TechniqueMove, toCellValue } from "./technique.ts"
 
 const trySetCell = (
   grid: SudokuGrid,
   index: number,
   value: number,
-): Effect.Effect<boolean, SolveError> =>
+): Effect.Effect<boolean, InvalidCellIndexError | InvalidCellValueError> =>
   grid.setCell(index, value).pipe(
     Effect.as(true),
     Effect.catchTags({
       CellConflictError: () => Effect.succeed(false),
       NoCandidatesRemainingError: () => Effect.succeed(false),
-      InvalidCellIndexError: (error) => Effect.fail(new SolveError({ message: error.message })),
-      InvalidCellValueError: (error) => Effect.fail(new SolveError({ message: error.message })),
     }),
   )
 
-const countSolutionsImpl = (
+const countSolutionsImpl: (
   grid: SudokuGrid,
   maxCount: number,
-): Effect.Effect<number, SolveError> =>
-  Effect.gen(function* () {
-    let count = 0
+) => Effect.Effect<number, InvalidCellIndexError | InvalidCellValueError> = Effect.fn(
+  "SolutionFinder.countSolutionsImpl",
+)(function* (grid, maxCount) {
+  let count = 0
 
-    const solveRecursive = (g: SudokuGrid): Effect.Effect<void, SolveError> =>
-      Effect.gen(function* () {
-        if (count >= maxCount) return
+  const solveRecursive = (
+    g: SudokuGrid,
+  ): Effect.Effect<void, InvalidCellIndexError | InvalidCellValueError> =>
+    Effect.gen(function* () {
+      if (count >= maxCount) return
 
-        const singles = findNakedSingles(g)
-        if (singles.length > 0) {
-          const newGrid = g.clone()
-          for (const idx of singles) {
-            const value = getSingleCandidate(newGrid.getCandidates(idx))
-            const setResult = yield* Option.match(value, {
-              onNone: () => Effect.succeed(true),
-              onSome: (candidate) => trySetCell(newGrid, idx, candidate),
-            })
-            if (!setResult) {
-              return
-            }
+      const singles = findNakedSingles(g)
+      if (singles.length > 0) {
+        const newGrid = g.clone()
+        for (const idx of singles) {
+          const value = getSingleCandidate(newGrid.getCandidates(idx))
+          const setResult = yield* Option.match(value, {
+            onNone: () => Effect.succeed(true),
+            onSome: (candidate) => trySetCell(newGrid, idx, candidate),
+          })
+          if (!setResult) {
+            return
           }
-          yield* solveRecursive(newGrid)
-          return
         }
+        yield* solveRecursive(newGrid)
+        return
+      }
 
-        const minCell = findMinCandidatesCell(g)
-        yield* Option.match(minCell, {
-          onNone: () => {
-            count++
+      const minCell = findMinCandidatesCell(g)
+      yield* Option.match(minCell, {
+        onNone: () => {
+          count++
+          return Effect.void
+        },
+        onSome: ({ index, count: candidateCount }) => {
+          if (candidateCount === 0) {
             return Effect.void
-          },
-          onSome: ({ index, count: candidateCount }) => {
-            if (candidateCount === 0) {
-              return Effect.void
-            }
-            const candidates = getCandidatesArray(g.getCandidates(index))
-            return Effect.forEach(
-              candidates,
-              (value) =>
-                Effect.gen(function* () {
-                  const newGrid = g.clone()
-                  const setResult = yield* trySetCell(newGrid, index, value)
-                  if (setResult) {
-                    yield* solveRecursive(newGrid)
-                  }
-                }),
-              { discard: true },
-            )
-          },
-        })
+          }
+          const candidates = getCandidatesArray(g.getCandidates(index))
+          return Effect.forEach(
+            candidates,
+            (value) =>
+              Effect.gen(function* () {
+                const newGrid = g.clone()
+                const setResult = yield* trySetCell(newGrid, index, value)
+                if (setResult) {
+                  yield* solveRecursive(newGrid)
+                }
+              }),
+            { discard: true },
+          )
+        },
       })
+    })
 
-    yield* solveRecursive(grid)
-    return count
-  })
+  yield* solveRecursive(grid)
+  return count
+})
 
-const findSolutionImpl = (grid: SudokuGrid): Effect.Effect<Option.Option<SudokuGrid>, SolveError> =>
-  Effect.gen(function* () {
+const findSolutionImpl: (
+  grid: SudokuGrid,
+) => Effect.Effect<Option.Option<SudokuGrid>, InvalidCellIndexError | InvalidCellValueError> =
+  Effect.fn("SolutionFinder.findSolutionImpl")(function* (grid) {
     const singles = findNakedSingles(grid)
     if (singles.length > 0) {
       const newGrid = grid.clone()
@@ -132,7 +135,7 @@ const findSolutionImpl = (grid: SudokuGrid): Effect.Effect<Option.Option<SudokuG
 const toSolutionStep = (move: TechniqueMove): SolutionStep => ({
   technique: move.technique,
   cell: move.cellIndex,
-  value: move.value,
+  value: toCellValue(move.value),
 })
 
 export class SolutionFinder extends Effect.Service<SolutionFinder>()("SolutionFinder", {
@@ -199,13 +202,7 @@ export class SolutionFinder extends Effect.Service<SolutionFinder>()("SolutionFi
         }
 
         steps.push(toSolutionStep(move.value))
-        const newGrid = yield* detector
-          .applyMove(workingGrid, move.value)
-          .pipe(
-            Effect.catchTag("InvalidGridError", (error) =>
-              Effect.fail(new SolveError({ message: error.message })),
-            ),
-          )
+        const newGrid = yield* detector.applyMove(workingGrid, move.value)
         workingGrid = newGrid
       }
 

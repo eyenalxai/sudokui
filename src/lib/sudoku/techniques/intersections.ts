@@ -3,10 +3,11 @@ import { Effect, Option, ParseResult, Schema } from "effect"
 import { BLOCK_SIZE, CANDIDATE_MASKS, GRID_SIZE } from "../grid/constants.ts"
 import { getBlockIndices } from "../grid/helpers.ts"
 import { SudokuGrid } from "../grid/sudoku-grid.ts"
-import { CellElimination, CellIndex, CellValue, TechniqueMove } from "../technique.ts"
+import { CellIndex } from "../puzzle.ts"
+import { CellElimination, TechniqueCellValue, TechniqueMove } from "../technique.ts"
 
 const makeCellIndex = (n: number) => Schema.decodeUnknown(CellIndex)(n)
-const makeCellValue = (n: number) => Schema.decodeUnknown(CellValue)(n)
+const makeCellValue = (n: number) => Schema.decodeUnknown(TechniqueCellValue)(n)
 type RawElimination = { index: number; values: readonly number[] }
 const makeCellElimination = (
   elimination: RawElimination,

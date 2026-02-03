@@ -1,5 +1,5 @@
 import { DifficultyLevel } from "./difficulty.ts"
-import { Technique } from "./technique.ts"
+import { Technique } from "./puzzle.ts"
 
 export const TECHNIQUE_DIFFICULTY: Record<Technique, DifficultyLevel> = {
   FULL_HOUSE: "EASY",

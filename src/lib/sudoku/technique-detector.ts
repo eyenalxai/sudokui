@@ -68,83 +68,61 @@ const runTechnique = (findTechnique: TechniqueFinder, grid: SudokuGrid) =>
     ),
   )
 
-const findNextMoveImpl = (
+const findNextMoveImpl = Effect.fn("TechniqueDetector.findNextMoveImpl")(function* (
   grid: SudokuGrid,
-): Effect.Effect<TechniqueMove, NoMoveFoundError | InvalidGridError> =>
-  Effect.gen(function* () {
-    for (const technique of TECHNIQUES) {
-      const findTechnique = technique.find
-      const move = yield* runTechnique(findTechnique, grid)
-      if (Option.isSome(move)) {
-        return move.value
-      }
+) {
+  for (const technique of TECHNIQUES) {
+    const findTechnique = technique.find
+    const move = yield* runTechnique(findTechnique, grid)
+    if (Option.isSome(move)) {
+      return move.value
     }
+  }
 
-    return yield* Effect.fail(new NoMoveFoundError({ message: "No logical move found" }))
-  })
+  return yield* Effect.fail(new NoMoveFoundError({ message: "No logical move found" }))
+})
 
-const findAllMovesImpl = (
+const findAllMovesImpl = Effect.fn("TechniqueDetector.findAllMovesImpl")(function* (
   grid: SudokuGrid,
-): Effect.Effect<ReadonlyArray<TechniqueMove>, InvalidGridError> =>
-  Effect.gen(function* () {
-    const moves: TechniqueMove[] = []
+) {
+  const moves: TechniqueMove[] = []
 
-    for (const technique of TECHNIQUES) {
-      const findTechnique = technique.find
-      const move = yield* runTechnique(findTechnique, grid)
-      Option.match(move, {
-        onNone: () => {},
-        onSome: (foundMove) => {
-          moves.push(foundMove)
-        },
-      })
-    }
+  for (const technique of TECHNIQUES) {
+    const findTechnique = technique.find
+    const move = yield* runTechnique(findTechnique, grid)
+    Option.match(move, {
+      onNone: () => {},
+      onSome: (foundMove) => {
+        moves.push(foundMove)
+      },
+    })
+  }
 
-    return moves
-  })
+  return moves
+})
 
 const PLACEMENT_TECHNIQUES = new Set(["FULL_HOUSE", "NAKED_SINGLE", "HIDDEN_SINGLE"])
 
-const applyMoveImpl = (
+const applyMoveImpl = Effect.fn("TechniqueDetector.applyMoveImpl")(function* (
   grid: SudokuGrid,
   move: TechniqueMove,
-): Effect.Effect<SudokuGrid, InvalidGridError> => {
+) {
   const newGrid = grid.clone()
 
-  return Effect.gen(function* () {
-    // Only set the cell for placement techniques (singles)
-    // Elimination-only techniques just remove candidates
-    if (PLACEMENT_TECHNIQUES.has(move.technique)) {
-      yield* newGrid.setCell(move.cellIndex, move.value).pipe(
-        Effect.catchTags({
-          CellConflictError: (error) =>
-            Effect.fail(new InvalidGridError({ message: error.message })),
-          InvalidCellIndexError: (error) =>
-            Effect.fail(new InvalidGridError({ message: error.message })),
-          InvalidCellValueError: (error) =>
-            Effect.fail(new InvalidGridError({ message: error.message })),
-          NoCandidatesRemainingError: (error) =>
-            Effect.fail(new InvalidGridError({ message: error.message })),
-        }),
-      )
-    }
+  // Only set the cell for placement techniques (singles)
+  // Elimination-only techniques just remove candidates
+  if (PLACEMENT_TECHNIQUES.has(move.technique)) {
+    yield* newGrid.setCell(move.cellIndex, move.value)
+  }
 
-    for (const elimination of move.eliminations) {
-      for (const value of elimination.values) {
-        yield* newGrid.removeCandidate(elimination.index, value).pipe(
-          Effect.catchTags({
-            InvalidCellIndexError: (error) =>
-              Effect.fail(new InvalidGridError({ message: error.message })),
-            NoCandidatesRemainingError: (error) =>
-              Effect.fail(new InvalidGridError({ message: error.message })),
-          }),
-        )
-      }
+  for (const elimination of move.eliminations) {
+    for (const value of elimination.values) {
+      yield* newGrid.removeCandidate(elimination.index, value)
     }
+  }
 
-    return newGrid
-  })
-}
+  return newGrid
+})
 
 export class TechniqueDetector extends Effect.Service<TechniqueDetector>()("TechniqueDetector", {
   accessors: true,

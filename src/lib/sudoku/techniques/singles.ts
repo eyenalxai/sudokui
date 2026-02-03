@@ -4,10 +4,11 @@ import { countCandidates, getSingleCandidate } from "../grid/candidates.ts"
 import { BLOCK_SIZE, CANDIDATE_MASKS, GRID_SIZE, TOTAL_CELLS } from "../grid/constants.ts"
 import { getRowIndices, getColIndices, getBlockIndices, getPeers } from "../grid/helpers.ts"
 import { SudokuGrid } from "../grid/sudoku-grid.ts"
-import { CellIndex, CellValue, TechniqueMove } from "../technique.ts"
+import { CellIndex } from "../puzzle.ts"
+import { TechniqueCellValue, TechniqueMove } from "../technique.ts"
 
 const makeCellIndex = (n: number) => Schema.decodeUnknown(CellIndex)(n)
-const makeCellValue = (n: number) => Schema.decodeUnknown(CellValue)(n)
+const makeCellValue = (n: number) => Schema.decodeUnknown(TechniqueCellValue)(n)
 const BLOCK_AREA = GRID_SIZE * BLOCK_SIZE
 
 /**
@@ -26,7 +27,7 @@ const isValidValue = (grid: SudokuGrid, index: number, value: number): boolean =
 const getMissingValueInUnit = (
   grid: SudokuGrid,
   indices: readonly number[],
-): Effect.Effect<Option.Option<CellValue>, ParseResult.ParseError> =>
+): Effect.Effect<Option.Option<TechniqueCellValue>, ParseResult.ParseError> =>
   Effect.gen(function* () {
     const present = new Set<number>()
     let emptyIndex: number | null = null

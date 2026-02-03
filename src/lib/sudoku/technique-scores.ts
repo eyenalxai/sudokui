@@ -1,4 +1,4 @@
-import { Technique } from "./technique.ts"
+import { Technique } from "./puzzle.ts"
 
 export const TECHNIQUE_SCORES: Record<Technique, number> = {
   FULL_HOUSE: 4,

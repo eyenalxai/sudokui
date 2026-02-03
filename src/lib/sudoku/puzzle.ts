@@ -2,7 +2,27 @@ import { Schema } from "effect"
 
 import { DifficultyLevel } from "./difficulty.ts"
 import { ALL_CANDIDATES, GRID_SIZE, TOTAL_CELLS } from "./grid/constants.ts"
-import { Technique } from "./technique.ts"
+
+export const Technique = Schema.Literal(
+  "FULL_HOUSE",
+  "NAKED_SINGLE",
+  "HIDDEN_SINGLE",
+  "LOCKED_PAIR",
+  "LOCKED_TRIPLE",
+  "LOCKED_CANDIDATES",
+  "NAKED_PAIR",
+  "NAKED_TRIPLE",
+  "NAKED_QUADRUPLE",
+  "HIDDEN_PAIR",
+  "HIDDEN_TRIPLE",
+  "HIDDEN_QUADRUPLE",
+  "SKYSCRAPER",
+  "X_WING",
+  "SWORDFISH",
+  "TWO_STRING_KITE",
+)
+
+export type Technique = typeof Technique.Type
 
 export const CellIndex = Schema.Number.pipe(
   Schema.int(),

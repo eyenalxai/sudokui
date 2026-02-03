@@ -3,6 +3,12 @@ import { Effect } from "effect"
 import { TOTAL_CELLS } from "../../grid/constants.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
 import { isComplete } from "../../grid/validation.ts"
+import {
+  CellConflictError,
+  InvalidCellIndexError,
+  InvalidCellValueError,
+  NoCandidatesRemainingError,
+} from "../../puzzle.ts"
 import { InvalidGridError, TechniqueDetector } from "../../technique-detector.ts"
 
 export interface PuzzleData {
@@ -50,7 +56,15 @@ export const loadPuzzlesFromCSV = async (filePath: string): Promise<PuzzleData[]
 export const solvePuzzle = (
   puzzle: string,
   expectedSolution: string,
-): Effect.Effect<SolveResult, InvalidGridError, TechniqueDetector> => {
+): Effect.Effect<
+  SolveResult,
+  | InvalidGridError
+  | InvalidCellIndexError
+  | InvalidCellValueError
+  | CellConflictError
+  | NoCandidatesRemainingError,
+  TechniqueDetector
+> => {
   return Effect.gen(function* () {
     const startTime = performance.now()
     const detector = yield* TechniqueDetector
@@ -138,4 +152,29 @@ export const printResults = (
   console.log(`  Average time: ${(results.totalTime / totalPuzzles).toFixed(2)}ms`)
   console.log(`  Average steps: ${(results.totalSteps / totalPuzzles).toFixed(1)}`)
   console.log(`  Techniques used: ${Array.from(results.allTechniques).join(", ")}`)
+}
+
+export const runDifficultyTest = async (
+  difficulty: string,
+  csvPath: string,
+): Promise<{
+  puzzles: PuzzleData[]
+  aggregated: ReturnType<typeof aggregateResults>
+}> => {
+  const puzzles = await loadPuzzlesFromCSV(csvPath)
+  const results: SolveResult[] = []
+
+  for (const puzzleData of puzzles) {
+    const result = Effect.runSync(
+      solvePuzzle(puzzleData.puzzle, puzzleData.solution).pipe(
+        Effect.provide(TechniqueDetector.Default),
+      ),
+    )
+    results.push(result)
+  }
+
+  const aggregated = aggregateResults(results)
+  printResults(difficulty, puzzles.length, aggregated)
+
+  return { puzzles, aggregated }
 }
