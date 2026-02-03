@@ -1,6 +1,7 @@
 import { Effect, Option, ParseResult, Schema } from "effect"
 
 import { SudokuGrid } from "./grid/sudoku-grid.ts"
+import { isValid } from "./grid/validation.ts"
 import { TechniqueMove } from "./technique.ts"
 import { findLockedCandidates, findPointingCandidates } from "./techniques/intersections.ts"
 import { findFullHouse, findNakedSingle, findHiddenSingle } from "./techniques/singles.ts"
@@ -45,7 +46,7 @@ const TECHNIQUES: ReadonlyArray<TechniqueInfo> = [
 ]
 
 const checkGridValid = (grid: SudokuGrid): Effect.Effect<void, InvalidGridError> => {
-  if (!grid.isValid()) {
+  if (!isValid(grid)) {
     return Effect.fail(new InvalidGridError({ message: "Grid is in invalid state" }))
   }
   return Effect.void

@@ -1,7 +1,9 @@
 import { Effect, Option } from "effect"
 
 import { getCandidatesArray, getSingleCandidate } from "./grid/candidates.ts"
+import { findMinCandidatesCell, findNakedSingles } from "./grid/search.ts"
 import { SudokuGrid } from "./grid/sudoku-grid.ts"
+import { isComplete, isValid } from "./grid/validation.ts"
 import { SolutionStep, SolveError } from "./puzzle.ts"
 import { TechniqueDetector } from "./technique-detector.ts"
 import { TechniqueMove } from "./technique.ts"
@@ -32,7 +34,7 @@ const countSolutionsImpl = (
       Effect.gen(function* () {
         if (count >= maxCount) return
 
-        const singles = g.findNakedSingles()
+        const singles = findNakedSingles(g)
         if (singles.length > 0) {
           const newGrid = g.clone()
           for (const idx of singles) {
@@ -49,7 +51,7 @@ const countSolutionsImpl = (
           return
         }
 
-        const minCell = g.findMinCandidatesCell()
+        const minCell = findMinCandidatesCell(g)
         yield* Option.match(minCell, {
           onNone: () => {
             count++
@@ -82,7 +84,7 @@ const countSolutionsImpl = (
 
 const findSolutionImpl = (grid: SudokuGrid): Effect.Effect<Option.Option<SudokuGrid>, SolveError> =>
   Effect.gen(function* () {
-    const singles = grid.findNakedSingles()
+    const singles = findNakedSingles(grid)
     if (singles.length > 0) {
       const newGrid = grid.clone()
       for (const idx of singles) {
@@ -98,11 +100,11 @@ const findSolutionImpl = (grid: SudokuGrid): Effect.Effect<Option.Option<SudokuG
       return yield* findSolutionImpl(newGrid)
     }
 
-    if (grid.isComplete()) {
+    if (isComplete(grid)) {
       return Option.some(grid)
     }
 
-    const minCell = grid.findMinCandidatesCell()
+    const minCell = findMinCandidatesCell(grid)
     return yield* Option.match(minCell, {
       onNone: () => Effect.succeed(Option.none()),
       onSome: ({ index, count: candidateCount }) => {
@@ -150,7 +152,7 @@ export class SolutionFinder extends Effect.Service<SolutionFinder>()("SolutionFi
     }),
 
     solveBruteForce: Effect.fn("SolutionFinder.solveBruteForce")(function* (grid: SudokuGrid) {
-      if (!grid.isValid()) {
+      if (!isValid(grid)) {
         return yield* Effect.fail(new SolveError({ message: "Invalid puzzle" }))
       }
 
@@ -178,7 +180,7 @@ export class SolutionFinder extends Effect.Service<SolutionFinder>()("SolutionFi
     }),
 
     solveLogically: Effect.fn("SolutionFinder.solveLogically")(function* (grid: SudokuGrid) {
-      if (!grid.isValid()) {
+      if (!isValid(grid)) {
         return yield* Effect.fail(new SolveError({ message: "Invalid puzzle" }))
       }
 
@@ -207,7 +209,7 @@ export class SolutionFinder extends Effect.Service<SolutionFinder>()("SolutionFi
         workingGrid = newGrid
       }
 
-      const solved = workingGrid.isComplete()
+      const solved = isComplete(workingGrid)
       return {
         solved,
         solutionCount: solved ? 1 : 0,

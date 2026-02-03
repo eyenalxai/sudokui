@@ -4,6 +4,7 @@ import { DifficultyLevel } from "./difficulty.ts"
 import { getCandidatesArray } from "./grid/candidates.ts"
 import { TOTAL_CELLS } from "./grid/constants.ts"
 import { SudokuGrid } from "./grid/sudoku-grid.ts"
+import { countGivens } from "./grid/validation.ts"
 import { GenerateOptions, GenerationError } from "./puzzle.ts"
 import { DifficultyScorer } from "./scorer.ts"
 import { SolutionFinder } from "./solver.ts"
@@ -161,7 +162,7 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
           }
         }
 
-        const clues = puzzle.countGivens()
+        const clues = countGivens(puzzle)
         if (clues <= minClues) {
           break
         }
@@ -219,7 +220,7 @@ export class PuzzleGenerator extends Effect.Service<PuzzleGenerator>()("PuzzleGe
             solution: fullGrid.toString(),
             difficulty: analysis.difficulty,
             score: analysis.score,
-            clues: puzzle.countGivens(),
+            clues: countGivens(puzzle),
             techniques: analysis.techniques,
           }
         }

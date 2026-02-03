@@ -31,14 +31,8 @@ interface PuzzleResult {
   index: number
 }
 
-const solvePuzzle = (
-  puzzle: string,
-): Effect.Effect<
-  { success: boolean; totalTime: number; uniqueCheckTime: number; solveTime: number },
-  never,
-  SolutionFinder
-> => {
-  return Effect.gen(function* () {
+const solvePuzzle = (puzzle: string) =>
+  Effect.gen(function* () {
     const solutionFinder = yield* SolutionFinder
     const grid = yield* SudokuGrid.fromString(puzzle).pipe(Effect.orDie)
 
@@ -59,7 +53,6 @@ const solvePuzzle = (
       solveTime,
     }
   })
-}
 
 const testDir = "/home/ulezot/Projects/misc/sudoku-kyle-gough/tests"
 

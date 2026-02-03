@@ -3,6 +3,7 @@ import { describe, it, expect } from "bun:test"
 import { Effect } from "effect"
 
 import { SudokuGrid } from "../grid/sudoku-grid.ts"
+import { countGivens } from "../grid/validation.ts"
 import { SolutionFinder } from "../solver.ts"
 
 const convertTdokuFormat = (puzzle: string): string => {
@@ -21,7 +22,7 @@ describe("SudokuGrid", () => {
       const program = Effect.gen(function* () {
         const grid = yield* SudokuGrid.fromString(puzzle)
         expect(grid.toString()).toBe(tdokuPuzzle)
-        expect(grid.countGivens()).toBe(34)
+        expect(countGivens(grid)).toBe(34)
       })
 
       Effect.runSync(program)

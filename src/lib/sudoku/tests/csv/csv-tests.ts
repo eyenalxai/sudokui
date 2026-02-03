@@ -2,6 +2,7 @@ import { Effect } from "effect"
 
 import { TOTAL_CELLS } from "../../grid/constants.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
+import { isComplete } from "../../grid/validation.ts"
 import { InvalidGridError, TechniqueDetector } from "../../technique-detector.ts"
 
 export interface PuzzleData {
@@ -78,7 +79,7 @@ export const solvePuzzle = (
     }
 
     const endTime = performance.now()
-    const isSolved = grid.isComplete()
+    const isSolved = isComplete(grid)
     const actualSolution = grid.toString()
 
     return {

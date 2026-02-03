@@ -1,4 +1,4 @@
-import { Effect, Option, Schema } from "effect"
+import { Effect, Schema } from "effect"
 
 import {
   CellIndex,
@@ -9,7 +9,7 @@ import {
   NoCandidatesRemainingError,
 } from "../puzzle.ts"
 
-import { countCandidates, getCandidateMask, getSingleCandidate } from "./candidates.ts"
+import { getCandidateMask } from "./candidates.ts"
 import { ALL_CANDIDATES, GRID_SIZE, TOTAL_CELLS } from "./constants.ts"
 import { getPeers } from "./helpers.ts"
 import { parsePuzzle, gridToString } from "./parsing.ts"
@@ -265,111 +265,11 @@ export class SudokuGrid {
     })
   }
 
-  isComplete(): boolean {
-    return this.cells.every((cell) => cell.value !== 0)
-  }
-
-  countEmpty(): number {
-    return this.cells.filter((cell) => cell.value === 0).length
-  }
-
-  countGivens(): number {
-    return this.cells.filter((cell) => cell.fixed).length
-  }
-
-  findMinCandidatesCell(): Option.Option<{ index: number; count: number }> {
-    let minIndex = -1
-    let minCount = 10
-
-    for (let i = 0; i < TOTAL_CELLS; i++) {
-      const cell = this.cells[i]
-      if (cell === undefined) continue
-      if (cell.value === 0) {
-        const count = countCandidates(cell.candidates)
-        if (count < minCount) {
-          minCount = count
-          minIndex = i
-          if (count === 1) break
-        }
-      }
-    }
-
-    if (minIndex === -1) return Option.none()
-    return Option.some({ index: minIndex, count: minCount })
-  }
-
-  findNakedSingles(): number[] {
-    const singles: number[] = []
-    for (let i = 0; i < TOTAL_CELLS; i++) {
-      const cell = this.cells[i]
-      if (cell === undefined) continue
-      if (cell.value === 0 && countCandidates(cell.candidates) === 1) {
-        singles.push(i)
-      }
-    }
-    return singles
-  }
-
-  setNakedSingles(): Effect.Effect<
-    void,
-    InvalidCellIndexError | InvalidCellValueError | CellConflictError | NoCandidatesRemainingError
-  > {
-    const { cells } = this.getSnapshot()
-    const setCell = (index: number, value: number) => this.setCell(index, value)
-    const findNakedSingles = () => this.findNakedSingles()
-    return Effect.gen(function* () {
-      let changed = true
-      let iterations = 0
-      const maxIterations = TOTAL_CELLS
-      while (changed && iterations < maxIterations) {
-        changed = false
-        iterations++
-        const singles = findNakedSingles()
-        for (const index of singles) {
-          const cell = cells[index]
-          if (cell === undefined) {
-            return yield* Effect.fail(
-              new InvalidCellIndexError({
-                index,
-                message: `Invalid cell index: ${index}`,
-              }),
-            )
-          }
-          const value = getSingleCandidate(cell.candidates)
-          if (Option.isSome(value)) {
-            yield* setCell(index, value.value)
-            changed = true
-          }
-        }
-      }
-    })
-  }
-
   toValues(): number[] {
     return this.cells.map((cell) => cell.value)
   }
 
   toString(): string {
     return gridToString(this.toValues())
-  }
-
-  isValid(): boolean {
-    for (let i = 0; i < TOTAL_CELLS; i++) {
-      const cell = this.cells[i]
-      if (cell === undefined) return false
-      if (cell.value !== 0) {
-        const peers = getPeers(i)
-        for (const peer of peers) {
-          const peerCell = this.cells[peer]
-          if (peerCell !== undefined && peerCell.value === cell.value) {
-            return false
-          }
-        }
-      }
-      if (cell.value === 0 && cell.candidates === 0) {
-        return false
-      }
-    }
-    return true
   }
 }
