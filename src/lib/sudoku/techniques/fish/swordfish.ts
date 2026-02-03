@@ -72,6 +72,100 @@ const getRowsFromCells = (cells: number[]): number[] => {
   return Array.from(rows).toSorted((a, b) => a - b)
 }
 
+const getTriplets = <T>(items: T[]): Array<[T, T, T]> => {
+  const triplets: Array<[T, T, T]> = []
+  for (let i = 0; i < items.length - 2; i++) {
+    for (let j = i + 1; j < items.length - 1; j++) {
+      for (let k = j + 1; k < items.length; k++) {
+        const first = items[i]
+        const second = items[j]
+        const third = items[k]
+        if (first === undefined || second === undefined || third === undefined) continue
+        triplets.push([first, second, third])
+      }
+    }
+  }
+  return triplets
+}
+
+const getSwordfishColsFromRows = (
+  row1: [number, number[]],
+  row2: [number, number[]],
+  row3: [number, number[]],
+): { allCells: number[]; cols: number[] } | null => {
+  const allCells = [...row1[1], ...row2[1], ...row3[1]]
+  const cols = getColumnsFromCells(allCells)
+  if (cols.length !== 3) return null
+  return { allCells, cols }
+}
+
+const getSwordfishRowsFromCols = (
+  col1: [number, number[]],
+  col2: [number, number[]],
+  col3: [number, number[]],
+): { allCells: number[]; rows: number[] } | null => {
+  const allCells = [...col1[1], ...col2[1], ...col3[1]]
+  const rows = getRowsFromCells(allCells)
+  if (rows.length !== 3) return null
+  return { allCells, rows }
+}
+
+const collectEliminationsForCols = (
+  grid: SudokuGrid,
+  mask: number,
+  digit: number,
+  cols: number[],
+  swordfishCells: Set<number>,
+): RawElimination[] => {
+  const eliminations: RawElimination[] = []
+  for (const col of cols) {
+    for (let row = 0; row < GRID_SIZE; row++) {
+      const idx = row * GRID_SIZE + col
+      if (swordfishCells.has(idx)) continue
+      if (grid.getCell(idx) !== 0) continue
+      if ((grid.getCandidates(idx) & mask) === 0) continue
+      eliminations.push({ index: idx, values: [digit] })
+    }
+  }
+  return eliminations
+}
+
+const collectEliminationsForRows = (
+  grid: SudokuGrid,
+  mask: number,
+  digit: number,
+  rows: number[],
+  swordfishCells: Set<number>,
+): RawElimination[] => {
+  const eliminations: RawElimination[] = []
+  for (const row of rows) {
+    for (let col = 0; col < GRID_SIZE; col++) {
+      const idx = row * GRID_SIZE + col
+      if (swordfishCells.has(idx)) continue
+      if (grid.getCell(idx) !== 0) continue
+      if ((grid.getCandidates(idx) & mask) === 0) continue
+      eliminations.push({ index: idx, values: [digit] })
+    }
+  }
+  return eliminations
+}
+
+const buildSwordfishMove = Effect.fn("Swordfish.buildMove")(function* (
+  digit: number,
+  allCells: number[],
+  eliminations: RawElimination[],
+) {
+  if (eliminations.length === 0 || allCells.length === 0) return Option.none()
+  const firstCell = allCells[0]
+  if (firstCell === undefined) return Option.none()
+  return Option.some<TechniqueMove>({
+    technique: "SWORDFISH",
+    cellIndex: yield* makeCellIndex(firstCell),
+    value: yield* makeCellValue(digit),
+    eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
+  })
+})
+
 const findSwordfishInRows = Effect.fn("Swordfish.findInRows")(function* (grid: SudokuGrid) {
   for (let digit = 1; digit <= 9; digit++) {
     const mask = getMask(digit)
@@ -80,56 +174,13 @@ const findSwordfishInRows = Effect.fn("Swordfish.findInRows")(function* (grid: S
     const rowsWithCandidates = findRowsWith2To3Candidates(grid, digit)
     if (rowsWithCandidates.length < 3) continue
 
-    // Try all combinations of 3 rows
-    for (let i = 0; i < rowsWithCandidates.length; i++) {
-      for (let j = i + 1; j < rowsWithCandidates.length; j++) {
-        for (let k = j + 1; k < rowsWithCandidates.length; k++) {
-          const row1 = rowsWithCandidates[i]
-          const row2 = rowsWithCandidates[j]
-          const row3 = rowsWithCandidates[k]
-
-          if (!row1 || !row2 || !row3) continue
-
-          const [_r1, cells1] = row1
-          const [_r2, cells2] = row2
-          const [_r3, cells3] = row3
-
-          // Union of all columns in these 3 rows
-          const allCells = [...cells1, ...cells2, ...cells3]
-          const cols = getColumnsFromCells(allCells)
-
-          // Swordfish pattern: exactly 3 columns
-          if (cols.length !== 3) continue
-
-          // Found Swordfish - calculate eliminations
-          const eliminations: RawElimination[] = []
-          const swordfishCells = new Set(allCells)
-
-          for (const col of cols) {
-            for (let row = 0; row < GRID_SIZE; row++) {
-              const idx = row * GRID_SIZE + col
-              if (
-                !swordfishCells.has(idx) &&
-                grid.getCell(idx) === 0 &&
-                (grid.getCandidates(idx) & mask) !== 0
-              ) {
-                eliminations.push({ index: idx, values: [digit] })
-              }
-            }
-          }
-
-          if (eliminations.length > 0 && allCells.length > 0) {
-            const firstCell = allCells[0]
-            if (firstCell === undefined) continue
-            return Option.some<TechniqueMove>({
-              technique: "SWORDFISH",
-              cellIndex: yield* makeCellIndex(firstCell),
-              value: yield* makeCellValue(digit),
-              eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
-            })
-          }
-        }
-      }
+    for (const [row1, row2, row3] of getTriplets(rowsWithCandidates)) {
+      const combo = getSwordfishColsFromRows(row1, row2, row3)
+      if (combo === null) continue
+      const swordfishCells = new Set(combo.allCells)
+      const eliminations = collectEliminationsForCols(grid, mask, digit, combo.cols, swordfishCells)
+      const move = yield* buildSwordfishMove(digit, combo.allCells, eliminations)
+      if (Option.isSome(move)) return move
     }
   }
 
@@ -144,56 +195,13 @@ const findSwordfishInCols = Effect.fn("Swordfish.findInCols")(function* (grid: S
     const colsWithCandidates = findColsWith2To3Candidates(grid, digit)
     if (colsWithCandidates.length < 3) continue
 
-    // Try all combinations of 3 columns
-    for (let i = 0; i < colsWithCandidates.length; i++) {
-      for (let j = i + 1; j < colsWithCandidates.length; j++) {
-        for (let k = j + 1; k < colsWithCandidates.length; k++) {
-          const col1 = colsWithCandidates[i]
-          const col2 = colsWithCandidates[j]
-          const col3 = colsWithCandidates[k]
-
-          if (!col1 || !col2 || !col3) continue
-
-          const [_c1, cells1] = col1
-          const [_c2, cells2] = col2
-          const [_c3, cells3] = col3
-
-          // Union of all rows in these 3 columns
-          const allCells = [...cells1, ...cells2, ...cells3]
-          const rows = getRowsFromCells(allCells)
-
-          // Swordfish pattern: exactly 3 rows
-          if (rows.length !== 3) continue
-
-          // Found Swordfish - calculate eliminations
-          const eliminations: RawElimination[] = []
-          const swordfishCells = new Set(allCells)
-
-          for (const row of rows) {
-            for (let col = 0; col < GRID_SIZE; col++) {
-              const idx = row * GRID_SIZE + col
-              if (
-                !swordfishCells.has(idx) &&
-                grid.getCell(idx) === 0 &&
-                (grid.getCandidates(idx) & mask) !== 0
-              ) {
-                eliminations.push({ index: idx, values: [digit] })
-              }
-            }
-          }
-
-          if (eliminations.length > 0 && allCells.length > 0) {
-            const firstCell = allCells[0]
-            if (firstCell === undefined) continue
-            return Option.some<TechniqueMove>({
-              technique: "SWORDFISH",
-              cellIndex: yield* makeCellIndex(firstCell),
-              value: yield* makeCellValue(digit),
-              eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
-            })
-          }
-        }
-      }
+    for (const [col1, col2, col3] of getTriplets(colsWithCandidates)) {
+      const combo = getSwordfishRowsFromCols(col1, col2, col3)
+      if (combo === null) continue
+      const swordfishCells = new Set(combo.allCells)
+      const eliminations = collectEliminationsForRows(grid, mask, digit, combo.rows, swordfishCells)
+      const move = yield* buildSwordfishMove(digit, combo.allCells, eliminations)
+      if (Option.isSome(move)) return move
     }
   }
 
