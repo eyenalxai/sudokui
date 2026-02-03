@@ -153,34 +153,46 @@ const findSkyscraperInRows = (
           // The "free ends" must NOT be in the same column (otherwise it's an X-Wing)
           if (sameCol(otherIdx1, otherIdx2)) continue
 
-          // Find cells that can see both free ends
-          const eliminations: RawElimination[] = []
-
-          // Get peers of both free ends
-          const peers1 = new Set(getPeers(otherIdx1))
-          const peers2 = new Set(getPeers(otherIdx2))
-
-          // Find intersection - cells that can see both free ends
-          for (const peer of peers1) {
-            if (
-              peers2.has(peer) &&
-              grid.getCell(peer) === 0 &&
-              (grid.getCandidates(peer) & mask) !== 0
-            ) {
-              eliminations.push({ index: peer, values: [digit] })
-            }
-          }
-
-          if (eliminations.length > 0) {
-            return Option.some<TechniqueMove>({
-              technique: "SKYSCRAPER",
-              cellIndex: yield* makeCellIndex(otherIdx1),
-              value: yield* makeCellValue(digit),
-              eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
-            })
-          }
+          // Try to find eliminations
+          const result = yield* findSkyscraperEliminations(grid, otherIdx1, otherIdx2, digit, mask)
+          if (Option.isSome(result)) return result
         }
       }
+    }
+
+    return Option.none()
+  })
+
+/**
+ * Find eliminations for a Skyscraper pattern given the two "free ends"
+ */
+const findSkyscraperEliminations = (
+  grid: SudokuGrid,
+  end1: number,
+  end2: number,
+  digit: number,
+  mask: number,
+): Effect.Effect<Option.Option<TechniqueMove>, ParseResult.ParseError> =>
+  Effect.gen(function* () {
+    // Get peers of both free ends
+    const peers1 = new Set(getPeers(end1))
+    const peers2 = new Set(getPeers(end2))
+
+    // Find intersection - cells that can see both free ends
+    const eliminations: RawElimination[] = []
+    for (const peer of peers1) {
+      if (peers2.has(peer) && grid.getCell(peer) === 0 && (grid.getCandidates(peer) & mask) !== 0) {
+        eliminations.push({ index: peer, values: [digit] })
+      }
+    }
+
+    if (eliminations.length > 0) {
+      return Option.some<TechniqueMove>({
+        technique: "SKYSCRAPER",
+        cellIndex: yield* makeCellIndex(end1),
+        value: yield* makeCellValue(digit),
+        eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
+      })
     }
 
     return Option.none()
@@ -239,32 +251,9 @@ const findSkyscraperInCols = (
           // The "free ends" must NOT be in the same row (otherwise it's an X-Wing)
           if (sameRow(otherIdx1, otherIdx2)) continue
 
-          // Find cells that can see both free ends
-          const eliminations: RawElimination[] = []
-
-          // Get peers of both free ends
-          const peers1 = new Set(getPeers(otherIdx1))
-          const peers2 = new Set(getPeers(otherIdx2))
-
-          // Find intersection - cells that can see both free ends
-          for (const peer of peers1) {
-            if (
-              peers2.has(peer) &&
-              grid.getCell(peer) === 0 &&
-              (grid.getCandidates(peer) & mask) !== 0
-            ) {
-              eliminations.push({ index: peer, values: [digit] })
-            }
-          }
-
-          if (eliminations.length > 0) {
-            return Option.some<TechniqueMove>({
-              technique: "SKYSCRAPER",
-              cellIndex: yield* makeCellIndex(otherIdx1),
-              value: yield* makeCellValue(digit),
-              eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
-            })
-          }
+          // Try to find eliminations
+          const result = yield* findSkyscraperEliminations(grid, otherIdx1, otherIdx2, digit, mask)
+          if (Option.isSome(result)) return result
         }
       }
     }
