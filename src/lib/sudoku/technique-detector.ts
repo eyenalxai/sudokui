@@ -4,6 +4,7 @@ import { SudokuGrid } from "./grid/sudoku-grid.ts"
 import { isValid } from "./grid/validation.ts"
 import { TechniqueMove } from "./technique.ts"
 import { findSkyscraper } from "./techniques/fish/skyscraper.ts"
+import { findTwoStringKite } from "./techniques/fish/two-string-kite.ts"
 import { findXWing } from "./techniques/fish/xwing.ts"
 import { findLockedCandidates, findPointingCandidates } from "./techniques/intersections.ts"
 import { findFullHouse, findNakedSingle, findHiddenSingle } from "./techniques/singles.ts"
@@ -47,6 +48,7 @@ const TECHNIQUES: ReadonlyArray<TechniqueInfo> = [
   { name: "HiddenQuad", find: findHiddenQuad },
   { name: "Skyscraper", find: findSkyscraper },
   { name: "XWing", find: findXWing },
+  { name: "TwoStringKite", find: findTwoStringKite },
 ]
 
 const checkGridValid = (grid: SudokuGrid): Effect.Effect<void, InvalidGridError> => {
