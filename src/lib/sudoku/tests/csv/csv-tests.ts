@@ -30,9 +30,9 @@ export const loadPuzzlesFromCSV = async (filePath: string): Promise<PuzzleData[]
 
   for (const line of dataLines) {
     const parts = line.split(",")
-    if (parts.length >= 8) {
+    if (parts.length >= 5) {
       const puzzle = parts[0]
-      const solution = parts[7]
+      const solution = parts[4]
       if (
         puzzle !== undefined &&
         solution !== undefined &&
