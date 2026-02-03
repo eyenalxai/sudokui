@@ -3,6 +3,7 @@ import { Effect, Option, ParseResult, Schema } from "effect"
 import { SudokuGrid } from "./grid/sudoku-grid.ts"
 import { isValid } from "./grid/validation.ts"
 import { TechniqueMove } from "./technique.ts"
+import { findSkyscraper } from "./techniques/fish-patterns.ts"
 import { findLockedCandidates, findPointingCandidates } from "./techniques/intersections.ts"
 import { findFullHouse, findNakedSingle, findHiddenSingle } from "./techniques/singles.ts"
 import {
@@ -43,6 +44,7 @@ const TECHNIQUES: ReadonlyArray<TechniqueInfo> = [
   { name: "HiddenTriple", find: findHiddenTriple },
   { name: "NakedQuad", find: findNakedQuad },
   { name: "HiddenQuad", find: findHiddenQuad },
+  { name: "Skyscraper", find: findSkyscraper },
 ]
 
 const checkGridValid = (grid: SudokuGrid): Effect.Effect<void, InvalidGridError> => {
