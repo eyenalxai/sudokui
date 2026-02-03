@@ -1,14 +1,12 @@
-import { Effect, Option, ParseResult, Schema } from "effect"
+import { Effect, Option, ParseResult } from "effect"
 
 import { countCandidates, getSingleCandidate } from "../grid/candidates.ts"
 import { BLOCK_SIZE, CANDIDATE_MASKS, GRID_SIZE, TOTAL_CELLS } from "../grid/constants.ts"
 import { getRowIndices, getColIndices, getBlockIndices, getPeers } from "../grid/helpers.ts"
 import { SudokuGrid } from "../grid/sudoku-grid.ts"
-import { CellIndex } from "../puzzle.ts"
 import { TechniqueCellValue, TechniqueMove } from "../technique.ts"
 
-const makeCellIndex = (n: number) => Schema.decodeUnknown(CellIndex)(n)
-const makeCellValue = (n: number) => Schema.decodeUnknown(TechniqueCellValue)(n)
+import { makeCellIndex, makeCellValue } from "./helpers.ts"
 const BLOCK_AREA = GRID_SIZE * BLOCK_SIZE
 
 /**

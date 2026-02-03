@@ -1,22 +1,16 @@
-import { Effect, Option, ParseResult, Schema } from "effect"
+import { Effect, Option, ParseResult } from "effect"
 
 import { BLOCK_SIZE, CANDIDATE_MASKS, GRID_SIZE } from "../grid/constants.ts"
 import { getBlockIndices } from "../grid/helpers.ts"
 import { SudokuGrid } from "../grid/sudoku-grid.ts"
-import { CellIndex } from "../puzzle.ts"
-import { CellElimination, TechniqueCellValue, TechniqueMove } from "../technique.ts"
+import { TechniqueMove } from "../technique.ts"
 
-const makeCellIndex = (n: number) => Schema.decodeUnknown(CellIndex)(n)
-const makeCellValue = (n: number) => Schema.decodeUnknown(TechniqueCellValue)(n)
-type RawElimination = { index: number; values: readonly number[] }
-const makeCellElimination = (
-  elimination: RawElimination,
-): Effect.Effect<CellElimination, ParseResult.ParseError> =>
-  Effect.gen(function* () {
-    const index = yield* makeCellIndex(elimination.index)
-    const values = yield* Effect.forEach(elimination.values, (value) => makeCellValue(value))
-    return { index, values }
-  })
+import {
+  makeCellElimination,
+  makeCellIndex,
+  makeCellValue,
+  type RawElimination,
+} from "./helpers.ts"
 
 const getMask = (value: number): number => CANDIDATE_MASKS[value] ?? 0
 const BLOCK_AREA = GRID_SIZE * BLOCK_SIZE

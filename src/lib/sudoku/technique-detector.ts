@@ -61,13 +61,8 @@ const checkGridValid = (grid: SudokuGrid): Effect.Effect<void, InvalidGridError>
 const runTechnique = (findTechnique: TechniqueFinder, grid: SudokuGrid) =>
   findTechnique(grid).pipe(
     Effect.catchTag("ParseError", (error) =>
-      Effect.fail(
-        new InvalidGridError({
-          message:
-            typeof error === "object" && error !== null && "message" in error
-              ? String(error.message)
-              : "Failed to decode technique move",
-        }),
+      ParseResult.TreeFormatter.formatError(error).pipe(
+        Effect.flatMap((message) => Effect.fail(new InvalidGridError({ message }))),
       ),
     ),
   )

@@ -16,64 +16,79 @@ import {
   type RawElimination,
 } from "./helpers.ts"
 
-const findXWingEliminations = Effect.fn("XWing.findEliminations")(function* (
+const findXWingEliminationsInCols = Effect.fn("XWing.findEliminationsInCols")(function* (
   grid: SudokuGrid,
   digit: number,
   mask: number,
   xWingCells: number[],
-  cols?: number[],
-  rows?: number[],
+  col1: number,
+  col2: number,
 ) {
   const eliminations: RawElimination[] = []
   const xWingSet = new Set(xWingCells)
 
-  if (cols && cols.length === 2) {
-    const col1 = cols[0]
-    const col2 = cols[1]
-    if (col1 !== undefined && col2 !== undefined) {
-      for (let row = 0; row < GRID_SIZE; row++) {
-        const idx1 = row * GRID_SIZE + col1
-        const idx2 = row * GRID_SIZE + col2
+  for (let row = 0; row < GRID_SIZE; row++) {
+    const idx1 = row * GRID_SIZE + col1
+    const idx2 = row * GRID_SIZE + col2
 
-        if (
-          !xWingSet.has(idx1) &&
-          grid.getCell(idx1) === 0 &&
-          (grid.getCandidates(idx1) & mask) !== 0
-        ) {
-          eliminations.push({ index: idx1, values: [digit] })
-        }
-        if (
-          !xWingSet.has(idx2) &&
-          grid.getCell(idx2) === 0 &&
-          (grid.getCandidates(idx2) & mask) !== 0
-        ) {
-          eliminations.push({ index: idx2, values: [digit] })
-        }
-      }
+    if (
+      !xWingSet.has(idx1) &&
+      grid.getCell(idx1) === 0 &&
+      (grid.getCandidates(idx1) & mask) !== 0
+    ) {
+      eliminations.push({ index: idx1, values: [digit] })
     }
-  } else if (rows && rows.length === 2) {
-    const row1 = rows[0]
-    const row2 = rows[1]
-    if (row1 !== undefined && row2 !== undefined) {
-      for (let col = 0; col < GRID_SIZE; col++) {
-        const idx1 = row1 * GRID_SIZE + col
-        const idx2 = row2 * GRID_SIZE + col
+    if (
+      !xWingSet.has(idx2) &&
+      grid.getCell(idx2) === 0 &&
+      (grid.getCandidates(idx2) & mask) !== 0
+    ) {
+      eliminations.push({ index: idx2, values: [digit] })
+    }
+  }
 
-        if (
-          !xWingSet.has(idx1) &&
-          grid.getCell(idx1) === 0 &&
-          (grid.getCandidates(idx1) & mask) !== 0
-        ) {
-          eliminations.push({ index: idx1, values: [digit] })
-        }
-        if (
-          !xWingSet.has(idx2) &&
-          grid.getCell(idx2) === 0 &&
-          (grid.getCandidates(idx2) & mask) !== 0
-        ) {
-          eliminations.push({ index: idx2, values: [digit] })
-        }
-      }
+  if (eliminations.length > 0 && xWingCells.length > 0) {
+    const firstCell = xWingCells[0]
+    if (firstCell === undefined) return Option.none()
+    return Option.some<TechniqueMove>({
+      technique: "X_WING",
+      cellIndex: yield* makeCellIndex(firstCell),
+      value: yield* makeCellValue(digit),
+      eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
+    })
+  }
+
+  return Option.none()
+})
+
+const findXWingEliminationsInRows = Effect.fn("XWing.findEliminationsInRows")(function* (
+  grid: SudokuGrid,
+  digit: number,
+  mask: number,
+  xWingCells: number[],
+  row1: number,
+  row2: number,
+) {
+  const eliminations: RawElimination[] = []
+  const xWingSet = new Set(xWingCells)
+
+  for (let col = 0; col < GRID_SIZE; col++) {
+    const idx1 = row1 * GRID_SIZE + col
+    const idx2 = row2 * GRID_SIZE + col
+
+    if (
+      !xWingSet.has(idx1) &&
+      grid.getCell(idx1) === 0 &&
+      (grid.getCandidates(idx1) & mask) !== 0
+    ) {
+      eliminations.push({ index: idx1, values: [digit] })
+    }
+    if (
+      !xWingSet.has(idx2) &&
+      grid.getCell(idx2) === 0 &&
+      (grid.getCandidates(idx2) & mask) !== 0
+    ) {
+      eliminations.push({ index: idx2, values: [digit] })
     }
   }
 
@@ -123,12 +138,13 @@ const findXWingInRows = Effect.fn("XWing.findInRows")(function* (grid: SudokuGri
 
         if (!isXWing || colA < 0 || colB < 0) continue
 
-        const result = yield* findXWingEliminations(
+        const result = yield* findXWingEliminationsInCols(
           grid,
           digit,
           mask,
           [idx1a, idx1b, idx2a, idx2b],
-          [colA, colB],
+          colA,
+          colB,
         )
         if (Option.isSome(result)) return result
       }
@@ -170,13 +186,13 @@ const findXWingInCols = Effect.fn("XWing.findInCols")(function* (grid: SudokuGri
 
         if (!isXWing || rowA < 0 || rowB < 0) continue
 
-        const result = yield* findXWingEliminations(
+        const result = yield* findXWingEliminationsInRows(
           grid,
           digit,
           mask,
           [idx1a, idx1b, idx2a, idx2b],
-          [],
-          [rowA, rowB],
+          rowA,
+          rowB,
         )
         if (Option.isSome(result)) return result
       }

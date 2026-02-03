@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
 
 import { TOTAL_CELLS } from "../../grid/constants.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
@@ -75,20 +75,18 @@ export const solvePuzzle = (
 
     while (true) {
       const move = yield* detector.findNextMove(grid).pipe(
-        Effect.matchEffect({
-          onSuccess: (m) => Effect.succeed(m),
-          onFailure: () => Effect.succeed(null),
-        }),
+        Effect.map(Option.some),
+        Effect.catchAll(() => Effect.succeed(Option.none())),
       )
 
-      if (move === null) {
+      if (Option.isNone(move)) {
         break
       }
 
-      techniquesUsed.add(move.technique)
+      techniquesUsed.add(move.value.technique)
       steps++
 
-      const newGrid = yield* detector.applyMove(grid, move)
+      const newGrid = yield* detector.applyMove(grid, move.value)
       grid = newGrid
     }
 

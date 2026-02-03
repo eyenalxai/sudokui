@@ -14,6 +14,9 @@ import { ALL_CANDIDATES, GRID_SIZE, TOTAL_CELLS } from "./constants.ts"
 import { getPeers } from "./helpers.ts"
 import { parsePuzzle, gridToString } from "./parsing.ts"
 
+const isCellIndex = Schema.is(CellIndex)
+const isCellValue = Schema.is(CellValue)
+
 export interface Cell {
   value: number
   candidates: number
@@ -115,8 +118,6 @@ export class SudokuGrid {
     InvalidCellIndexError | InvalidCellValueError | CellConflictError | NoCandidatesRemainingError
   > {
     const { cells } = this.getSnapshot()
-    const isCellIndex = Schema.is(CellIndex)
-    const isCellValue = Schema.is(CellValue)
     return Effect.gen(function* () {
       if (index < 0 || index >= TOTAL_CELLS) {
         return yield* Effect.fail(
@@ -222,7 +223,6 @@ export class SudokuGrid {
     value: number,
   ): Effect.Effect<void, InvalidCellIndexError | NoCandidatesRemainingError> {
     const { cells } = this.getSnapshot()
-    const isCellIndex = Schema.is(CellIndex)
     return Effect.gen(function* () {
       if (index < 0 || index >= TOTAL_CELLS) {
         return yield* Effect.fail(

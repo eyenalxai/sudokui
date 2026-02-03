@@ -1,6 +1,7 @@
 import { Effect, Option } from "effect"
 
 import { GRID_SIZE } from "../../grid/constants.ts"
+import { indexToBlock, indexToCol, indexToRow } from "../../grid/helpers.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
 import { TechniqueMove } from "../../technique.ts"
 
@@ -12,29 +13,6 @@ import {
   makeCellIndex,
   makeCellValue,
 } from "./helpers.ts"
-
-/**
- * Get the box (3x3 block) index for a cell
- */
-const getBox = (idx: number): number => {
-  const row = Math.floor(idx / GRID_SIZE)
-  const col = idx % GRID_SIZE
-  return Math.floor(row / 3) * 3 + Math.floor(col / 3)
-}
-
-/**
- * Get the row index for a cell
- */
-const getRow = (idx: number): number => {
-  return Math.floor(idx / GRID_SIZE)
-}
-
-/**
- * Get the column index for a cell
- */
-const getCol = (idx: number): number => {
-  return idx % GRID_SIZE
-}
 
 /**
  * TWO-STRING-KITE
@@ -74,22 +52,22 @@ export const findTwoStringKite = Effect.fn("TechniqueFinder.findTwoStringKite")(
         // Hodoku logic: ensure indices[0] are in the box, indices[1] are free ends
         let found = false
 
-        if (getBox(rowCellA) === getBox(colCellA)) {
+        if (indexToBlock(rowCellA) === indexToBlock(colCellA)) {
           // rowCellA and colCellA are in the same box - perfect as is
           found = true
-        } else if (getBox(rowCellA) === getBox(colCellB)) {
+        } else if (indexToBlock(rowCellA) === indexToBlock(colCellB)) {
           // rowCellA and colCellB are in the same box - swap col cells
           const tmp = colCellA
           colCellA = colCellB
           colCellB = tmp
           found = true
-        } else if (getBox(rowCellB) === getBox(colCellA)) {
+        } else if (indexToBlock(rowCellB) === indexToBlock(colCellA)) {
           // rowCellB and colCellA are in the same box - swap row cells
           const tmp = rowCellA
           rowCellA = rowCellB
           rowCellB = tmp
           found = true
-        } else if (getBox(rowCellB) === getBox(colCellB)) {
+        } else if (indexToBlock(rowCellB) === indexToBlock(colCellB)) {
           // rowCellB and colCellB are in the same box - swap both
           let tmp = rowCellA
           rowCellA = rowCellB
@@ -122,8 +100,8 @@ export const findTwoStringKite = Effect.fn("TechniqueFinder.findTwoStringKite")(
         // The elimination is at the intersection of:
         // - row of col's free end (colCellB)
         // - column of row's free end (rowCellB)
-        const crossRow = getRow(colCellB)
-        const crossCol = getCol(rowCellB)
+        const crossRow = indexToRow(colCellB)
+        const crossCol = indexToCol(rowCellB)
         const crossIndex = crossRow * GRID_SIZE + crossCol
 
         // Check if the cross cell has the candidate
