@@ -98,7 +98,7 @@ export class SolveError extends Schema.TaggedError<SolveError>()("SolveError", {
 }) {}
 
 export const SolutionStep = Schema.Struct({
-  technique: Schema.String,
+  technique: Technique,
   cell: CellIndex,
   value: CellValue,
   candidates: Schema.optional(Candidates),
