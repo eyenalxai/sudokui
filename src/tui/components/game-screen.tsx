@@ -88,13 +88,13 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
 
   useKeyboard((key) => {
     // Navigation
-    if (key.name === "up" || key.name === "k") {
+    if (key.name === "up" || key.name === "w") {
       moveCursor("up")
-    } else if (key.name === "down" || key.name === "j") {
+    } else if (key.name === "down" || key.name === "s") {
       moveCursor("down")
-    } else if (key.name === "left" || key.name === "h") {
+    } else if (key.name === "left" || key.name === "a") {
       moveCursor("left")
-    } else if (key.name === "right" || key.name === "l") {
+    } else if (key.name === "right" || key.name === "d") {
       moveCursor("right")
     }
     // Number input
@@ -123,7 +123,7 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
       <SudokuGridDisplay grid={grid} selectedCell={selectedCell} />
       <box height={1} />
       <text fg={theme.textMuted}>
-        ↑/↓/←/→ or hjkl to move • 1-9 to fill • 0/Del/Back to clear • Esc/q to menu
+        ↑/↓/←/→ or wasd to move • 1-9 to fill • 0/Del/Back to clear • Esc/q to menu
       </text>
     </box>
   )
