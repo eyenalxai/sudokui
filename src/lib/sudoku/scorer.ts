@@ -23,7 +23,7 @@ const determineDifficultyImpl = (techniques: Technique[]): DifficultyLevel => {
   let maxDifficulty: DifficultyLevel = "EASY"
   let totalScore = 0
 
-  const difficultyOrder = ["EASY", "MEDIUM", "HARD", "UNFAIR", "EXTREME"] as const
+  const difficultyOrder = ["EASY", "MEDIUM", "HARD", "EXPERT", "EXTREME", "DIABOLICAL"] as const
 
   for (const tech of techniques) {
     const difficulty = TECHNIQUE_DIFFICULTY[tech]

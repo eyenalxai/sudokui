@@ -169,7 +169,15 @@ const removeCellsImpl = Effect.fn("PuzzleGenerator.removeCellsImpl")(function* (
 
   const analysis = yield* difficultyScorer.analyzePuzzle(puzzle)
 
-  const difficultyOrder = ["INCOMPLETE", "EASY", "MEDIUM", "HARD", "UNFAIR", "EXTREME"] as const
+  const difficultyOrder = [
+    "INCOMPLETE",
+    "EASY",
+    "MEDIUM",
+    "HARD",
+    "EXPERT",
+    "EXTREME",
+    "DIABOLICAL",
+  ] as const
   const targetIndex = difficultyOrder.indexOf(targetDifficulty)
   const actualIndex = difficultyOrder.indexOf(analysis.difficulty)
 

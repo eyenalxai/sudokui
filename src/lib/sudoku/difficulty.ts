@@ -5,16 +5,18 @@ export const DifficultyLevel = Schema.Literal(
   "EASY",
   "MEDIUM",
   "HARD",
-  "UNFAIR",
+  "EXPERT",
   "EXTREME",
+  "DIABOLICAL",
 )
 export type DifficultyLevel = typeof DifficultyLevel.Type
 
 export const DIFFICULTY_THRESHOLDS: Record<DifficultyLevel, number> = {
   INCOMPLETE: 0,
-  EASY: 800,
-  MEDIUM: 1000,
-  HARD: 1600,
-  UNFAIR: 1800,
-  EXTREME: Number.MAX_SAFE_INTEGER,
+  EASY: 50,
+  MEDIUM: 200,
+  HARD: 500,
+  EXPERT: 1000,
+  EXTREME: 1500,
+  DIABOLICAL: Number.MAX_SAFE_INTEGER,
 }
