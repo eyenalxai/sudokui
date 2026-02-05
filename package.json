@@ -6,6 +6,7 @@
   "scripts": {
     "check": "oxfmt && oxlint --type-aware --fix && tsc --noEmit --pretty",
     "check:tests": "bun check && bun test",
+    "convert-puzzles": "bun scripts/convert-puzzles.ts",
     "dev": "bun run --watch src/index.tsx"
   },
   "dependencies": {
