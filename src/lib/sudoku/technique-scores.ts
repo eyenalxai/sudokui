@@ -17,4 +17,5 @@ export const TECHNIQUE_SCORES: Record<Technique, number> = {
   X_WING: 180,
   SWORDFISH: 250,
   TWO_STRING_KITE: 190,
+  TURBOT_FISH: 195,
 }

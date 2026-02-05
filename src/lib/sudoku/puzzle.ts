@@ -20,6 +20,7 @@ export const Technique = Schema.Literal(
   "X_WING",
   "SWORDFISH",
   "TWO_STRING_KITE",
+  "TURBOT_FISH",
 )
 
 export type Technique = typeof Technique.Type

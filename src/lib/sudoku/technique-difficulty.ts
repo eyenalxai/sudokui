@@ -18,4 +18,5 @@ export const TECHNIQUE_DIFFICULTY: Record<Technique, DifficultyLevel> = {
   X_WING: "HARD",
   SWORDFISH: "EXTREME",
   TWO_STRING_KITE: "HARD",
+  TURBOT_FISH: "HARD",
 }
