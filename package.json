@@ -7,9 +7,12 @@
     "check": "oxfmt && oxlint --type-aware --fix && tsc --noEmit --pretty",
     "check:tests": "bun check && bun test",
     "convert-puzzles": "bun scripts/convert-puzzles.ts",
+    "start": "bun run src/index.tsx",
     "dev": "bun run --watch src/index.tsx"
   },
   "dependencies": {
+    "@effect/platform": "^0.94.3",
+    "@effect/platform-bun": "^0.87.1",
     "@opentui/core": "^0.1.75",
     "@opentui/react": "^0.1.75",
     "effect": "^3.19.15",
