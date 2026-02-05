@@ -109,8 +109,3 @@ export const SolutionResult = Schema.Struct({
 })
 export type SolutionResult = typeof SolutionResult.Type
 
-export const Puzzle = Schema.Struct({
-  grid: Schema.String,
-  solution: Schema.String,
-})
-export type Puzzle = typeof Puzzle.Type
