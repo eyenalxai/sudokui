@@ -24,6 +24,7 @@ type SudokuGridRenderableOptions = FrameBufferOptions & {
   cellWidth?: number
   cellHeight?: number
   gridColor?: string | RGBA
+  boxBorderColor?: string | RGBA
   backgroundColor?: string | RGBA
   fixedColor?: string | RGBA
   valueColor?: string | RGBA
@@ -35,6 +36,8 @@ type SudokuGridRenderableOptions = FrameBufferOptions & {
 const GRID_SIZE = 9
 const CELL_WIDTH = 5
 const CELL_HEIGHT = 3
+
+const isBoxBoundary = (index: number): boolean => index % 3 === 0
 
 const GRID_CHARS = {
   horizontal: "─",
@@ -62,6 +65,7 @@ class SudokuGridRenderable extends FrameBufferRenderable {
   private _cellWidth: number
   private _cellHeight: number
   private _gridColor: RGBA
+  private _boxBorderColor: RGBA
   private _backgroundColor: RGBA
   private _fixedColor: RGBA
   private _valueColor: RGBA
@@ -77,6 +81,7 @@ class SudokuGridRenderable extends FrameBufferRenderable {
     this._cellHeight = Math.max(1, Math.floor(options.cellHeight ?? CELL_HEIGHT))
 
     const fallbackGrid = RGBA.fromHex("#666666")
+    const fallbackBoxBorder = RGBA.fromHex("#3399ff")
     const fallbackBg = RGBA.fromHex("#000000")
     const fallbackFixed = RGBA.fromHex("#ffffff")
     const fallbackValue = RGBA.fromHex("#cccccc")
@@ -85,6 +90,7 @@ class SudokuGridRenderable extends FrameBufferRenderable {
     const fallbackCandidate = RGBA.fromHex("#666666")
 
     this._gridColor = resolveColor(options.gridColor, fallbackGrid)
+    this._boxBorderColor = resolveColor(options.boxBorderColor, fallbackBoxBorder)
     this._backgroundColor = resolveColor(options.backgroundColor, fallbackBg)
     this._fixedColor = resolveColor(options.fixedColor, fallbackFixed)
     this._valueColor = resolveColor(options.valueColor, fallbackValue)
@@ -118,6 +124,11 @@ class SudokuGridRenderable extends FrameBufferRenderable {
 
   set gridColor(value: string | RGBA) {
     this._gridColor = resolveColor(value, this._gridColor)
+    this.requestRender()
+  }
+
+  set boxBorderColor(value: string | RGBA) {
+    this._boxBorderColor = resolveColor(value, this._boxBorderColor)
     this.requestRender()
   }
 
@@ -181,17 +192,20 @@ class SudokuGridRenderable extends FrameBufferRenderable {
       )
     }
 
-    const horizontalLine = GRID_CHARS.horizontal.repeat(gridWidth)
-
     for (let lineIndex = 0; lineIndex <= GRID_SIZE; lineIndex++) {
       const y = lineIndex * yStride
-      frameBuffer.drawText(horizontalLine, 0, y, this._gridColor, this._backgroundColor)
+      const isBoxLine = isBoxBoundary(lineIndex)
+      const lineColor = isBoxLine ? this._boxBorderColor : this._gridColor
+      const line = GRID_CHARS.horizontal.repeat(gridWidth)
+      frameBuffer.drawText(line, 0, y, lineColor, this._backgroundColor)
     }
 
     for (let lineIndex = 0; lineIndex <= GRID_SIZE; lineIndex++) {
       const x = lineIndex * xStride
+      const isBoxLine = isBoxBoundary(lineIndex)
+      const lineColor = isBoxLine ? this._boxBorderColor : this._gridColor
       for (let y = 0; y < gridHeight; y++) {
-        frameBuffer.setCell(x, y, GRID_CHARS.vertical, this._gridColor, this._backgroundColor)
+        frameBuffer.setCell(x, y, GRID_CHARS.vertical, lineColor, this._backgroundColor)
       }
     }
 
@@ -199,11 +213,16 @@ class SudokuGridRenderable extends FrameBufferRenderable {
       const y = rowIndex * yStride
       const atTop = rowIndex === 0
       const atBottom = rowIndex === GRID_SIZE
+      const isBoxRow = isBoxBoundary(rowIndex)
 
       for (let colIndex = 0; colIndex <= GRID_SIZE; colIndex++) {
         const x = colIndex * xStride
         const atLeft = colIndex === 0
         const atRight = colIndex === GRID_SIZE
+        const isBoxCol = isBoxBoundary(colIndex)
+
+        const isIntersection = isBoxRow || isBoxCol
+        const lineColor = isIntersection ? this._boxBorderColor : this._gridColor
 
         let char = GRID_CHARS.cross
         if (atTop && atLeft) char = GRID_CHARS.topLeft
@@ -215,7 +234,7 @@ class SudokuGridRenderable extends FrameBufferRenderable {
         else if (atLeft) char = GRID_CHARS.leftT
         else if (atRight) char = GRID_CHARS.rightT
 
-        frameBuffer.setCell(x, y, char, this._gridColor, this._backgroundColor)
+        frameBuffer.setCell(x, y, char, lineColor, this._backgroundColor)
       }
     }
 
@@ -315,6 +334,7 @@ export const SudokuGridDisplay = ({ grid, selectedCell }: SudokuGridDisplayProps
       height={gridHeight}
       flexShrink={0}
       gridColor={theme.border}
+      boxBorderColor={theme.text}
       backgroundColor={theme.background}
       fixedColor={theme.text}
       valueColor={theme.secondary}
