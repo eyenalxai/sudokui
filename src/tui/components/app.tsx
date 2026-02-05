@@ -1,16 +1,46 @@
+import type { DifficultyLevel, Puzzle } from "../../lib/sudoku/puzzle-sets"
 import type { ReactNode } from "react"
+import { useState } from "react"
 
-import { useTheme } from "../providers/theme"
+import { SudokuGrid } from "../../lib/sudoku/grid/sudoku-grid"
+
+import { DifficultyMenu } from "./difficulty-menu"
+import { GameScreen } from "./game-screen"
+
+type AppState =
+  | { readonly view: "menu" }
+  | {
+      readonly view: "game"
+      readonly puzzle: Puzzle
+      readonly difficulty: DifficultyLevel
+      readonly grid: SudokuGrid
+    }
 
 export const App = (): ReactNode => {
-  const theme = useTheme()
+  const [state, setState] = useState<AppState>({ view: "menu" })
+
+  const handleSelectDifficulty = (
+    difficulty: DifficultyLevel,
+    puzzle: Puzzle,
+    grid: SudokuGrid,
+  ) => {
+    setState({ view: "game", puzzle, difficulty, grid })
+  }
+
+  const handleReturnToMenu = () => {
+    setState({ view: "menu" })
+  }
+
+  if (state.view === "menu") {
+    return <DifficultyMenu onSelectDifficulty={handleSelectDifficulty} />
+  }
 
   return (
-    <box alignItems="center" justifyContent="center" flexGrow={1} flexDirection="column" gap={1}>
-      <text fg={theme.primary} attributes={1}>
-        Sudokui
-      </text>
-      <text fg={theme.textMuted}>Press any key to start...</text>
-    </box>
+    <GameScreen
+      puzzle={state.puzzle}
+      difficulty={state.difficulty}
+      grid={state.grid}
+      onReturnToMenu={handleReturnToMenu}
+    />
   )
 }

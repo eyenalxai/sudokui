@@ -34,7 +34,7 @@ export const allDifficulties = [
   vicious,
 ] as const
 
-const difficultyLevels = [
+export const difficultyLevels = [
   "Very Easy",
   "Easy",
   "Moderately Easy",
@@ -45,6 +45,10 @@ const difficultyLevels = [
 ] as const
 
 export type DifficultyLevel = (typeof difficultyLevels)[number]
+
+export const isDifficultyLevel = (value: string): value is DifficultyLevel => {
+  return (difficultyLevels as readonly string[]).includes(value)
+}
 
 export function getPuzzlesByDifficulty(difficulty: DifficultyLevel): PuzzleSet | undefined {
   return allDifficulties.find((d) => d.difficulty === difficulty)
