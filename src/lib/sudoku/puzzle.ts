@@ -89,11 +89,6 @@ export class InvalidPuzzleError extends Schema.TaggedError<InvalidPuzzleError>()
   },
 ) {}
 
-export class GenerationError extends Schema.TaggedError<GenerationError>()("GenerationError", {
-  message: Schema.String,
-  difficulty: Schema.optional(DifficultyLevel),
-}) {}
-
 export class SolveError extends Schema.TaggedError<SolveError>()("SolveError", {
   message: Schema.String,
 }) {}
@@ -124,11 +119,3 @@ export const Puzzle = Schema.Struct({
   techniques: Schema.Array(Technique),
 })
 export type Puzzle = typeof Puzzle.Type
-
-export const GenerateOptions = Schema.Struct({
-  difficulty: Schema.optionalWith(DifficultyLevel, { default: () => "MEDIUM" }),
-  symmetric: Schema.optionalWith(Schema.Boolean, { default: () => false }),
-  minClues: Schema.optionalWith(Schema.Number, { default: () => 17 }),
-  maxAttempts: Schema.optionalWith(Schema.Number, { default: () => 10000 }),
-})
-export type GenerateOptions = typeof GenerateOptions.Type
