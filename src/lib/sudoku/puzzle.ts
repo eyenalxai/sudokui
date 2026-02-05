@@ -1,6 +1,5 @@
 import { Schema } from "effect"
 
-import { DifficultyLevel } from "./difficulty.ts"
 import { ALL_CANDIDATES, GRID_SIZE, TOTAL_CELLS } from "./grid/constants.ts"
 
 export const Technique = Schema.Literal(
@@ -113,9 +112,5 @@ export type SolutionResult = typeof SolutionResult.Type
 export const Puzzle = Schema.Struct({
   grid: Schema.String,
   solution: Schema.String,
-  difficulty: DifficultyLevel,
-  score: Schema.Number,
-  clues: Schema.Number,
-  techniques: Schema.Array(Technique),
 })
 export type Puzzle = typeof Puzzle.Type
