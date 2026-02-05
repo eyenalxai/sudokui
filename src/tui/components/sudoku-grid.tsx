@@ -1,4 +1,4 @@
-import type { SudokuGrid } from "../../lib/sudoku/grid/sudoku-grid"
+import type { Cell, SudokuGrid } from "../../lib/sudoku/grid/sudoku-grid"
 import {
   FrameBufferRenderable,
   OptimizedBuffer,
@@ -10,6 +10,7 @@ import {
 import { extend } from "@opentui/react"
 import type { ReactNode } from "react"
 
+import { getCandidatesArray } from "../../lib/sudoku/grid/candidates"
 import { useTheme } from "../providers/theme"
 
 type SudokuGridDisplayProps = {
@@ -20,17 +21,20 @@ type SudokuGridDisplayProps = {
 type SudokuGridRenderableOptions = FrameBufferOptions & {
   grid: SudokuGrid
   selectedCell: number
-  cellSize?: number
+  cellWidth?: number
+  cellHeight?: number
   gridColor?: string | RGBA
   backgroundColor?: string | RGBA
   fixedColor?: string | RGBA
   valueColor?: string | RGBA
   selectedBackgroundColor?: string | RGBA
   selectedTextColor?: string | RGBA
+  candidateColor?: string | RGBA
 }
 
 const GRID_SIZE = 9
-const DEFAULT_CELL_SIZE = 3
+const CELL_WIDTH = 5
+const CELL_HEIGHT = 3
 
 const GRID_CHARS = {
   horizontal: "─",
@@ -55,19 +59,22 @@ const resolveColor = (value: string | RGBA | undefined, fallback: RGBA): RGBA =>
 class SudokuGridRenderable extends FrameBufferRenderable {
   private _grid: SudokuGrid
   private _selectedCell: number
-  private _cellSize: number
+  private _cellWidth: number
+  private _cellHeight: number
   private _gridColor: RGBA
   private _backgroundColor: RGBA
   private _fixedColor: RGBA
   private _valueColor: RGBA
   private _selectedBackgroundColor: RGBA
   private _selectedTextColor: RGBA
+  private _candidateColor: RGBA
 
   constructor(ctx: RenderContext, options: SudokuGridRenderableOptions) {
     super(ctx, options)
     this._grid = options.grid
     this._selectedCell = options.selectedCell
-    this._cellSize = Math.max(1, Math.floor(options.cellSize ?? DEFAULT_CELL_SIZE))
+    this._cellWidth = Math.max(1, Math.floor(options.cellWidth ?? CELL_WIDTH))
+    this._cellHeight = Math.max(1, Math.floor(options.cellHeight ?? CELL_HEIGHT))
 
     const fallbackGrid = RGBA.fromHex("#666666")
     const fallbackBg = RGBA.fromHex("#000000")
@@ -75,6 +82,7 @@ class SudokuGridRenderable extends FrameBufferRenderable {
     const fallbackValue = RGBA.fromHex("#cccccc")
     const fallbackSelectedBg = RGBA.fromHex("#3399ff")
     const fallbackSelectedText = RGBA.fromHex("#000000")
+    const fallbackCandidate = RGBA.fromHex("#666666")
 
     this._gridColor = resolveColor(options.gridColor, fallbackGrid)
     this._backgroundColor = resolveColor(options.backgroundColor, fallbackBg)
@@ -85,6 +93,7 @@ class SudokuGridRenderable extends FrameBufferRenderable {
       fallbackSelectedBg,
     )
     this._selectedTextColor = resolveColor(options.selectedTextColor, fallbackSelectedText)
+    this._candidateColor = resolveColor(options.candidateColor, fallbackCandidate)
   }
 
   set grid(value: SudokuGrid) {
@@ -97,8 +106,13 @@ class SudokuGridRenderable extends FrameBufferRenderable {
     this.requestRender()
   }
 
-  set cellSize(value: number) {
-    this._cellSize = Math.max(1, Math.floor(value))
+  set cellWidth(value: number) {
+    this._cellWidth = Math.max(1, Math.floor(value))
+    this.requestRender()
+  }
+
+  set cellHeight(value: number) {
+    this._cellHeight = Math.max(1, Math.floor(value))
     this.requestRender()
   }
 
@@ -132,6 +146,11 @@ class SudokuGridRenderable extends FrameBufferRenderable {
     this.requestRender()
   }
 
+  set candidateColor(value: string | RGBA) {
+    this._candidateColor = resolveColor(value, this._candidateColor)
+    this.requestRender()
+  }
+
   protected override renderSelf(buffer: OptimizedBuffer): void {
     this.drawGrid()
     super.renderSelf(buffer)
@@ -139,23 +158,25 @@ class SudokuGridRenderable extends FrameBufferRenderable {
 
   private drawGrid(): void {
     const frameBuffer = this.frameBuffer
-    const stride = this._cellSize + 1
-    const gridWidth = GRID_SIZE * stride + 1
-    const gridHeight = GRID_SIZE * stride + 1
-    const centerOffset = Math.floor(this._cellSize / 2)
+    const xStride = this._cellWidth + 1
+    const yStride = this._cellHeight + 1
+    const gridWidth = GRID_SIZE * xStride + 1
+    const gridHeight = GRID_SIZE * yStride + 1
+    const centerX = Math.floor(this._cellWidth / 2)
+    const centerY = Math.floor(this._cellHeight / 2)
 
     frameBuffer.fillRect(0, 0, this.width, this.height, this._backgroundColor)
 
     if (this._selectedCell >= 0 && this._selectedCell < GRID_SIZE * GRID_SIZE) {
       const row = Math.floor(this._selectedCell / GRID_SIZE)
       const col = this._selectedCell % GRID_SIZE
-      const startX = 1 + col * stride
-      const startY = 1 + row * stride
+      const startX = 1 + col * xStride
+      const startY = 1 + row * yStride
       frameBuffer.fillRect(
         startX,
         startY,
-        this._cellSize,
-        this._cellSize,
+        this._cellWidth,
+        this._cellHeight,
         this._selectedBackgroundColor,
       )
     }
@@ -163,24 +184,24 @@ class SudokuGridRenderable extends FrameBufferRenderable {
     const horizontalLine = GRID_CHARS.horizontal.repeat(gridWidth)
 
     for (let lineIndex = 0; lineIndex <= GRID_SIZE; lineIndex++) {
-      const y = lineIndex * stride
+      const y = lineIndex * yStride
       frameBuffer.drawText(horizontalLine, 0, y, this._gridColor, this._backgroundColor)
     }
 
     for (let lineIndex = 0; lineIndex <= GRID_SIZE; lineIndex++) {
-      const x = lineIndex * stride
+      const x = lineIndex * xStride
       for (let y = 0; y < gridHeight; y++) {
         frameBuffer.setCell(x, y, GRID_CHARS.vertical, this._gridColor, this._backgroundColor)
       }
     }
 
     for (let rowIndex = 0; rowIndex <= GRID_SIZE; rowIndex++) {
-      const y = rowIndex * stride
+      const y = rowIndex * yStride
       const atTop = rowIndex === 0
       const atBottom = rowIndex === GRID_SIZE
 
       for (let colIndex = 0; colIndex <= GRID_SIZE; colIndex++) {
-        const x = colIndex * stride
+        const x = colIndex * xStride
         const atLeft = colIndex === 0
         const atRight = colIndex === GRID_SIZE
 
@@ -198,26 +219,74 @@ class SudokuGridRenderable extends FrameBufferRenderable {
       }
     }
 
+    // Candidate positions in a 3x3 grid within each cell (5x3 cell size)
+    const candidatePositions: Array<[number, number]> = [
+      [0, 0],
+      [2, 0],
+      [4, 0], // 1, 2, 3
+      [0, 1],
+      [2, 1],
+      [4, 1], // 4, 5, 6
+      [0, 2],
+      [2, 2],
+      [4, 2], // 7, 8, 9
+    ]
+
     for (let row = 0; row < GRID_SIZE; row++) {
       for (let col = 0; col < GRID_SIZE; col++) {
         const cellIndex = row * GRID_SIZE + col
         const cell = this._grid.cells[cellIndex]
-        if (!cell || cell.value === 0) continue
+        if (!cell) continue
 
+        const cellX = 1 + col * xStride
+        const cellY = 1 + row * yStride
         const isSelected = cellIndex === this._selectedCell
-        const isFixed = cell.fixed
-        const fg = isSelected
-          ? this._selectedTextColor
-          : isFixed
-            ? this._fixedColor
-            : this._valueColor
-        const attributes = isFixed ? TextAttributes.BOLD : 0
 
-        const x = 1 + col * stride + centerOffset
-        const y = 1 + row * stride + centerOffset
-        frameBuffer.drawText(cell.value.toString(), x, y, fg, undefined, attributes)
+        if (cell.value === 0) {
+          this.drawCandidates(frameBuffer, cell, cellX, cellY, candidatePositions, isSelected)
+        } else {
+          this.drawCellValue(frameBuffer, cell, cellX, cellY, centerX, centerY, isSelected)
+        }
       }
     }
+  }
+
+  private drawCandidates(
+    frameBuffer: OptimizedBuffer,
+    cell: Cell,
+    cellX: number,
+    cellY: number,
+    candidatePositions: Array<[number, number]>,
+    isSelected: boolean,
+  ): void {
+    const candidates = getCandidatesArray(cell.candidates)
+    const bg = isSelected ? this._selectedBackgroundColor : this._backgroundColor
+    for (const candidate of candidates) {
+      const pos = candidatePositions[candidate - 1]
+      if (pos !== undefined) {
+        const x = cellX + pos[0]
+        const y = cellY + pos[1]
+        frameBuffer.drawText(candidate.toString(), x, y, this._candidateColor, bg)
+      }
+    }
+  }
+
+  private drawCellValue(
+    frameBuffer: OptimizedBuffer,
+    cell: Cell,
+    cellX: number,
+    cellY: number,
+    centerX: number,
+    centerY: number,
+    isSelected: boolean,
+  ): void {
+    const isFixed = cell.fixed
+    const fg = isSelected ? this._selectedTextColor : isFixed ? this._fixedColor : this._valueColor
+    const attributes = isFixed ? TextAttributes.BOLD : 0
+
+    const x = cellX + centerX
+    const y = cellY + centerY
+    frameBuffer.drawText(cell.value.toString(), x, y, fg, undefined, attributes)
   }
 }
 
@@ -231,16 +300,19 @@ extend({ sudokuGrid: SudokuGridRenderable })
 
 export const SudokuGridDisplay = ({ grid, selectedCell }: SudokuGridDisplayProps): ReactNode => {
   const theme = useTheme()
-  const cellSize = DEFAULT_CELL_SIZE
-  const gridSpan = GRID_SIZE * (cellSize + 1) + 1
+  const cellWidth = CELL_WIDTH
+  const cellHeight = CELL_HEIGHT
+  const gridWidth = GRID_SIZE * (cellWidth + 1) + 1
+  const gridHeight = GRID_SIZE * (cellHeight + 1) + 1
 
   return (
     <sudokuGrid
       grid={grid}
       selectedCell={selectedCell}
-      cellSize={cellSize}
-      width={gridSpan}
-      height={gridSpan}
+      cellWidth={cellWidth}
+      cellHeight={cellHeight}
+      width={gridWidth}
+      height={gridHeight}
       flexShrink={0}
       gridColor={theme.border}
       backgroundColor={theme.background}
@@ -248,6 +320,7 @@ export const SudokuGridDisplay = ({ grid, selectedCell }: SudokuGridDisplayProps
       valueColor={theme.secondary}
       selectedBackgroundColor={theme.primary}
       selectedTextColor={theme.background}
+      candidateColor={theme.textMuted}
     />
   )
 }
