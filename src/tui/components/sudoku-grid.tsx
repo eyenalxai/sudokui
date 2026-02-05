@@ -46,8 +46,11 @@ const GRID_CHARS = {
   cross: "┼",
 }
 
-const resolveColor = (value: string | RGBA | undefined, fallback: RGBA) =>
-  value instanceof RGBA ? value : value ? RGBA.fromHex(value) : fallback
+const resolveColor = (value: string | RGBA | undefined, fallback: RGBA): RGBA => {
+  if (value instanceof RGBA) return value
+  if (value !== undefined) return RGBA.fromHex(value)
+  return fallback
+}
 
 class SudokuGridRenderable extends FrameBufferRenderable {
   private _grid: SudokuGrid

@@ -159,7 +159,8 @@
     "eslint/no-negated-condition": "error",
     "eslint/no-promise-executor-return": "error",
     "eslint/no-useless-return": "error",
-    "eslint/require-await": "off"
+    "eslint/require-await": "off",
+    "eslint/accessor-pairs": "off"
   },
   "settings": {
     "jsx-a11y": {
