@@ -1,30 +1,30 @@
+import type { TechniqueMove } from "../../technique.ts"
 import { Effect, Option } from "effect"
 
-import { getPeers } from "../../grid/helpers.ts"
+import { BLOCK_SIZE, GRID_SIZE } from "../../grid/constants.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
-
 import {
-  findStrongLinks,
   getMask,
   makeCellElimination,
   makeCellIndex,
   makeCellValue,
   type RawElimination,
-  type StrongLink,
-} from "./helpers.ts"
+} from "../helpers.ts"
+
+import { collectPeerIntersectionEliminations, findStrongLinks, type StrongLink } from "./helpers.ts"
 
 // Inline implementation is faster than getPeers(cell1).includes(cell2)
 const areWeaklyLinked = (cell1: number, cell2: number): boolean => {
-  const row1 = Math.floor(cell1 / 9)
-  const col1 = cell1 % 9
-  const row2 = Math.floor(cell2 / 9)
-  const col2 = cell2 % 9
+  const row1 = Math.floor(cell1 / GRID_SIZE)
+  const col1 = cell1 % GRID_SIZE
+  const row2 = Math.floor(cell2 / GRID_SIZE)
+  const col2 = cell2 % GRID_SIZE
 
   if (row1 === row2) return true
   if (col1 === col2) return true
 
-  const box1 = Math.floor(row1 / 3) * 3 + Math.floor(col1 / 3)
-  const box2 = Math.floor(row2 / 3) * 3 + Math.floor(col2 / 3)
+  const box1 = Math.floor(row1 / BLOCK_SIZE) * BLOCK_SIZE + Math.floor(col1 / BLOCK_SIZE)
+  const box2 = Math.floor(row2 / BLOCK_SIZE) * BLOCK_SIZE + Math.floor(col2 / BLOCK_SIZE)
   if (box1 === box2) return true
 
   return false
@@ -41,19 +41,17 @@ const findTurbotFishEliminations = Effect.fn("TurbotFish.findEliminations")(func
   digit: number,
   mask: number,
 ) {
-  const peers1 = new Set(getPeers(end1))
-  const peers2 = new Set(getPeers(end2))
-
-  const eliminations: RawElimination[] = []
-  for (const peer of peers1) {
-    if (peers2.has(peer) && grid.getCell(peer) === 0 && (grid.getCandidates(peer) & mask) !== 0) {
-      eliminations.push({ index: peer, values: [digit] })
-    }
-  }
+  const eliminations: RawElimination[] = collectPeerIntersectionEliminations(
+    grid,
+    end1,
+    end2,
+    digit,
+    mask,
+  )
 
   if (eliminations.length > 0) {
-    return Option.some({
-      technique: "TURBOT_FISH" as const,
+    return Option.some<TechniqueMove>({
+      technique: "TURBOT_FISH",
       cellIndex: yield* makeCellIndex(end1),
       value: yield* makeCellValue(digit),
       eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
@@ -138,7 +136,7 @@ const findTurbotFishForDigit = Effect.fn("TurbotFish.findForDigit")(function* (
 export const findTurbotFish = Effect.fn("TechniqueFinder.findTurbotFish")(function* (
   grid: SudokuGrid,
 ) {
-  for (let digit = 1; digit <= 9; digit++) {
+  for (let digit = 1; digit <= GRID_SIZE; digit++) {
     const result = yield* findTurbotFishForDigit(grid, digit)
     if (Option.isSome(result)) return result
   }

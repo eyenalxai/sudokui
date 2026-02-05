@@ -1,14 +1,7 @@
-import { CANDIDATE_MASKS, GRID_SIZE } from "../../grid/constants.ts"
+import { BLOCK_SIZE, GRID_SIZE } from "../../grid/constants.ts"
+import { getPeers } from "../../grid/helpers.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
-
-export {
-  makeCellElimination,
-  makeCellIndex,
-  makeCellValue,
-  type RawElimination,
-} from "../helpers.ts"
-
-export const getMask = (value: number): number => CANDIDATE_MASKS[value] ?? 0
+import { getMask, type RawElimination } from "../helpers.ts"
 
 export interface StrongLink {
   cell1: number
@@ -46,11 +39,11 @@ export const findStrongLinks = (grid: SudokuGrid, digit: number): StrongLink[] =
   }
 
   for (let box = 0; box < GRID_SIZE; box++) {
-    const boxRow = Math.floor(box / 3) * 3
-    const boxCol = (box % 3) * 3
+    const boxRow = Math.floor(box / BLOCK_SIZE) * BLOCK_SIZE
+    const boxCol = (box % BLOCK_SIZE) * BLOCK_SIZE
     const cells: number[] = []
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
+    for (let r = 0; r < BLOCK_SIZE; r++) {
+      for (let c = 0; c < BLOCK_SIZE; c++) {
         const idx = (boxRow + r) * GRID_SIZE + (boxCol + c)
         if (grid.getCell(idx) === 0 && (grid.getCandidates(idx) & mask) !== 0) {
           cells.push(idx)
@@ -70,10 +63,37 @@ export const findRowsWithNCandidates = (
   digit: number,
   n: number,
 ): Array<[number, number, number]> => {
+  const rows = findRowsWithCandidateRange(grid, digit, n, n)
+  return rows.flatMap(([row, cells]) =>
+    cells.length === n && n >= 2 && cells[0] !== undefined && cells[1] !== undefined
+      ? [[row, cells[0], cells[1]]]
+      : [],
+  )
+}
+
+export const findColsWithNCandidates = (
+  grid: SudokuGrid,
+  digit: number,
+  n: number,
+): Array<[number, number, number]> => {
+  const cols = findColsWithCandidateRange(grid, digit, n, n)
+  return cols.flatMap(([col, cells]) =>
+    cells.length === n && n >= 2 && cells[0] !== undefined && cells[1] !== undefined
+      ? [[col, cells[0], cells[1]]]
+      : [],
+  )
+}
+
+export const findRowsWithCandidateRange = (
+  grid: SudokuGrid,
+  digit: number,
+  min: number,
+  max: number,
+): Array<[number, number[]]> => {
   const mask = getMask(digit)
   if (mask === 0) return []
 
-  const result: Array<[number, number, number]> = []
+  const result: Array<[number, number[]]> = []
 
   for (let row = 0; row < GRID_SIZE; row++) {
     const cells: number[] = []
@@ -83,23 +103,24 @@ export const findRowsWithNCandidates = (
         cells.push(idx)
       }
     }
-    if (cells.length === n && n >= 2 && cells[0] !== undefined && cells[1] !== undefined) {
-      result.push([row, cells[0], cells[1]])
+    if (cells.length >= min && cells.length <= max) {
+      result.push([row, cells])
     }
   }
 
   return result
 }
 
-export const findColsWithNCandidates = (
+export const findColsWithCandidateRange = (
   grid: SudokuGrid,
   digit: number,
-  n: number,
-): Array<[number, number, number]> => {
+  min: number,
+  max: number,
+): Array<[number, number[]]> => {
   const mask = getMask(digit)
   if (mask === 0) return []
 
-  const result: Array<[number, number, number]> = []
+  const result: Array<[number, number[]]> = []
 
   for (let col = 0; col < GRID_SIZE; col++) {
     const cells: number[] = []
@@ -109,12 +130,32 @@ export const findColsWithNCandidates = (
         cells.push(idx)
       }
     }
-    if (cells.length === n && n >= 2 && cells[0] !== undefined && cells[1] !== undefined) {
-      result.push([col, cells[0], cells[1]])
+    if (cells.length >= min && cells.length <= max) {
+      result.push([col, cells])
     }
   }
 
   return result
+}
+
+export const collectPeerIntersectionEliminations = (
+  grid: SudokuGrid,
+  end1: number,
+  end2: number,
+  digit: number,
+  mask: number,
+): RawElimination[] => {
+  const peers1 = new Set(getPeers(end1))
+  const peers2 = new Set(getPeers(end2))
+  const eliminations: RawElimination[] = []
+
+  for (const peer of peers1) {
+    if (peers2.has(peer) && grid.getCell(peer) === 0 && (grid.getCandidates(peer) & mask) !== 0) {
+      eliminations.push({ index: peer, values: [digit] })
+    }
+  }
+
+  return eliminations
 }
 
 export const sameCol = (idx1: number, idx2: number): boolean => {

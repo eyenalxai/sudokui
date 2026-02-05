@@ -1,18 +1,16 @@
+import type { TechniqueMove } from "../../technique.ts"
 import { Effect, Option } from "effect"
 
-import { getPeers } from "../../grid/helpers.ts"
+import { GRID_SIZE } from "../../grid/constants.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
+import { getMask, makeCellElimination, makeCellIndex, makeCellValue } from "../helpers.ts"
 
 import {
+  collectPeerIntersectionEliminations,
   findColsWithNCandidates,
   findRowsWithNCandidates,
-  getMask,
-  makeCellElimination,
-  makeCellIndex,
-  makeCellValue,
   sameCol,
   sameRow,
-  type RawElimination,
 } from "./helpers.ts"
 
 const findSkyscraperEliminations = Effect.fn("Skyscraper.findEliminations")(function* (
@@ -22,19 +20,11 @@ const findSkyscraperEliminations = Effect.fn("Skyscraper.findEliminations")(func
   digit: number,
   mask: number,
 ) {
-  const peers1 = new Set(getPeers(end1))
-  const peers2 = new Set(getPeers(end2))
-
-  const eliminations: RawElimination[] = []
-  for (const peer of peers1) {
-    if (peers2.has(peer) && grid.getCell(peer) === 0 && (grid.getCandidates(peer) & mask) !== 0) {
-      eliminations.push({ index: peer, values: [digit] })
-    }
-  }
+  const eliminations = collectPeerIntersectionEliminations(grid, end1, end2, digit, mask)
 
   if (eliminations.length > 0) {
-    return Option.some({
-      technique: "SKYSCRAPER" as const,
+    return Option.some<TechniqueMove>({
+      technique: "SKYSCRAPER",
       cellIndex: yield* makeCellIndex(end1),
       value: yield* makeCellValue(digit),
       eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
@@ -45,7 +35,7 @@ const findSkyscraperEliminations = Effect.fn("Skyscraper.findEliminations")(func
 })
 
 const findSkyscraperInRows = Effect.fn("Skyscraper.findInRows")(function* (grid: SudokuGrid) {
-  for (let digit = 1; digit <= 9; digit++) {
+  for (let digit = 1; digit <= GRID_SIZE; digit++) {
     const mask = getMask(digit)
     if (mask === 0) continue
 
@@ -95,7 +85,7 @@ const findSkyscraperInRows = Effect.fn("Skyscraper.findInRows")(function* (grid:
 })
 
 const findSkyscraperInCols = Effect.fn("Skyscraper.findInCols")(function* (grid: SudokuGrid) {
-  for (let digit = 1; digit <= 9; digit++) {
+  for (let digit = 1; digit <= GRID_SIZE; digit++) {
     const mask = getMask(digit)
     if (mask === 0) continue
 

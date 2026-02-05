@@ -1,18 +1,18 @@
 import { Effect, Option, ParseResult } from "effect"
 
-import { BLOCK_SIZE, CANDIDATE_MASKS, GRID_SIZE } from "../grid/constants.ts"
+import { BLOCK_SIZE, GRID_SIZE } from "../grid/constants.ts"
 import { getBlockIndices } from "../grid/helpers.ts"
 import { SudokuGrid } from "../grid/sudoku-grid.ts"
 import { TechniqueMove } from "../technique.ts"
 
 import {
+  collectCandidateEliminations,
+  getMask,
   makeCellElimination,
   makeCellIndex,
   makeCellValue,
-  type RawElimination,
 } from "./helpers.ts"
 
-const getMask = (value: number): number => CANDIDATE_MASKS[value] ?? 0
 const BLOCK_AREA = GRID_SIZE * BLOCK_SIZE
 
 /**
@@ -51,29 +51,23 @@ const findPointingInBox = (
       const allInSameRow = cellsWithCandidate.every((idx) => Math.floor(idx / GRID_SIZE) === row)
 
       if (allInSameRow) {
-        const eliminations: RawElimination[] = []
+        const rowIndices = Array.from({ length: GRID_SIZE }, (_, c) => row * GRID_SIZE + c)
         const boxCol = Math.floor((boxStartIndex % GRID_SIZE) / BLOCK_SIZE)
-
+        const exclude = new Set<number>(cellsWithCandidate)
         for (let c = 0; c < GRID_SIZE; c++) {
           const idx = row * GRID_SIZE + c
-          if (grid.getCell(idx) !== 0) continue
-          if (Math.floor((idx % GRID_SIZE) / BLOCK_SIZE) === boxCol) continue
-          if (cellsWithCandidate.includes(idx)) continue
-
-          const candidates = grid.getCandidates(idx)
-          if ((candidates & mask) !== 0) {
-            eliminations.push({ index: idx, values: [value] })
+          if (Math.floor((idx % GRID_SIZE) / BLOCK_SIZE) === boxCol) {
+            exclude.add(idx)
           }
         }
+        const eliminations = collectCandidateEliminations(grid, rowIndices, value, mask, exclude)
 
         if (eliminations.length > 0) {
           return Option.some({
             technique: cellsWithCandidate.length === 2 ? "LOCKED_PAIR" : "LOCKED_TRIPLE",
             cellIndex: yield* makeCellIndex(firstCell),
             value: yield* makeCellValue(value),
-            eliminations: yield* Effect.forEach(eliminations, (elimination) =>
-              makeCellElimination(elimination),
-            ),
+            eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
           })
         }
       }
@@ -82,29 +76,23 @@ const findPointingInBox = (
       const allInSameCol = cellsWithCandidate.every((idx) => idx % GRID_SIZE === col)
 
       if (allInSameCol) {
-        const eliminations: RawElimination[] = []
+        const colIndices = Array.from({ length: GRID_SIZE }, (_, r) => r * GRID_SIZE + col)
         const boxRow = Math.floor(boxStartIndex / BLOCK_AREA)
-
+        const exclude = new Set<number>(cellsWithCandidate)
         for (let r = 0; r < GRID_SIZE; r++) {
           const idx = r * GRID_SIZE + col
-          if (grid.getCell(idx) !== 0) continue
-          if (Math.floor(idx / BLOCK_AREA) === boxRow) continue
-          if (cellsWithCandidate.includes(idx)) continue
-
-          const candidates = grid.getCandidates(idx)
-          if ((candidates & mask) !== 0) {
-            eliminations.push({ index: idx, values: [value] })
+          if (Math.floor(idx / BLOCK_AREA) === boxRow) {
+            exclude.add(idx)
           }
         }
+        const eliminations = collectCandidateEliminations(grid, colIndices, value, mask, exclude)
 
         if (eliminations.length > 0) {
           return Option.some({
             technique: cellsWithCandidate.length === 2 ? "LOCKED_PAIR" : "LOCKED_TRIPLE",
             cellIndex: yield* makeCellIndex(firstCell),
             value: yield* makeCellValue(value),
-            eliminations: yield* Effect.forEach(eliminations, (elimination) =>
-              makeCellElimination(elimination),
-            ),
+            eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
           })
         }
       }
@@ -153,27 +141,21 @@ const findBoxLineReductionInRow = (
 
       if (!allInSameBox) continue
 
-      const eliminations: RawElimination[] = []
       const boxIndices = getBlockIndices(firstCell)
-
+      const exclude = new Set<number>(cellsWithCandidate)
       for (const idx of boxIndices) {
-        if (grid.getCell(idx) !== 0) continue
-        if (Math.floor(idx / GRID_SIZE) === row) continue
-        if (cellsWithCandidate.includes(idx)) continue
-
-        if ((grid.getCandidates(idx) & mask) !== 0) {
-          eliminations.push({ index: idx, values: [value] })
+        if (Math.floor(idx / GRID_SIZE) === row) {
+          exclude.add(idx)
         }
       }
+      const eliminations = collectCandidateEliminations(grid, boxIndices, value, mask, exclude)
 
       if (eliminations.length > 0) {
         return Option.some({
           technique: "LOCKED_CANDIDATES",
           cellIndex: yield* makeCellIndex(firstCell),
           value: yield* makeCellValue(value),
-          eliminations: yield* Effect.forEach(eliminations, (elimination) =>
-            makeCellElimination(elimination),
-          ),
+          eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
         })
       }
     }
@@ -215,27 +197,21 @@ const findBoxLineReductionInCol = (
 
       if (!allInSameBox) continue
 
-      const eliminations: RawElimination[] = []
       const boxIndices = getBlockIndices(firstCell)
-
+      const exclude = new Set<number>(cellsWithCandidate)
       for (const idx of boxIndices) {
-        if (grid.getCell(idx) !== 0) continue
-        if (idx % GRID_SIZE === col) continue
-        if (cellsWithCandidate.includes(idx)) continue
-
-        if ((grid.getCandidates(idx) & mask) !== 0) {
-          eliminations.push({ index: idx, values: [value] })
+        if (idx % GRID_SIZE === col) {
+          exclude.add(idx)
         }
       }
+      const eliminations = collectCandidateEliminations(grid, boxIndices, value, mask, exclude)
 
       if (eliminations.length > 0) {
         return Option.some({
           technique: "LOCKED_CANDIDATES",
           cellIndex: yield* makeCellIndex(firstCell),
           value: yield* makeCellValue(value),
-          eliminations: yield* Effect.forEach(eliminations, (elimination) =>
-            makeCellElimination(elimination),
-          ),
+          eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
         })
       }
     }

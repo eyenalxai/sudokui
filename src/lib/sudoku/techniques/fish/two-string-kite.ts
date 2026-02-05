@@ -4,15 +4,9 @@ import { GRID_SIZE } from "../../grid/constants.ts"
 import { indexToBlock, indexToCol, indexToRow } from "../../grid/helpers.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
 import { TechniqueMove } from "../../technique.ts"
+import { getMask, makeCellElimination, makeCellIndex, makeCellValue } from "../helpers.ts"
 
-import {
-  findColsWithNCandidates,
-  findRowsWithNCandidates,
-  getMask,
-  makeCellElimination,
-  makeCellIndex,
-  makeCellValue,
-} from "./helpers.ts"
+import { findColsWithNCandidates, findRowsWithNCandidates } from "./helpers.ts"
 
 /**
  * TWO-STRING-KITE

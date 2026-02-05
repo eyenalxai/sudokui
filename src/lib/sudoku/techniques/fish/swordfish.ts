@@ -3,58 +3,16 @@ import { Effect, Option } from "effect"
 import { GRID_SIZE } from "../../grid/constants.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
 import { TechniqueMove } from "../../technique.ts"
-
 import {
+  collectCandidateEliminations,
   getMask,
   makeCellElimination,
   makeCellIndex,
   makeCellValue,
   type RawElimination,
-} from "./helpers.ts"
+} from "../helpers.ts"
 
-const findRowsWith2To3Candidates = (grid: SudokuGrid, digit: number): Array<[number, number[]]> => {
-  const mask = getMask(digit)
-  if (mask === 0) return []
-
-  const result: Array<[number, number[]]> = []
-
-  for (let row = 0; row < GRID_SIZE; row++) {
-    const cells: number[] = []
-    for (let col = 0; col < GRID_SIZE; col++) {
-      const idx = row * GRID_SIZE + col
-      if (grid.getCell(idx) === 0 && (grid.getCandidates(idx) & mask) !== 0) {
-        cells.push(idx)
-      }
-    }
-    if (cells.length >= 2 && cells.length <= 3) {
-      result.push([row, cells])
-    }
-  }
-
-  return result
-}
-
-const findColsWith2To3Candidates = (grid: SudokuGrid, digit: number): Array<[number, number[]]> => {
-  const mask = getMask(digit)
-  if (mask === 0) return []
-
-  const result: Array<[number, number[]]> = []
-
-  for (let col = 0; col < GRID_SIZE; col++) {
-    const cells: number[] = []
-    for (let row = 0; row < GRID_SIZE; row++) {
-      const idx = row * GRID_SIZE + col
-      if (grid.getCell(idx) === 0 && (grid.getCandidates(idx) & mask) !== 0) {
-        cells.push(idx)
-      }
-    }
-    if (cells.length >= 2 && cells.length <= 3) {
-      result.push([col, cells])
-    }
-  }
-
-  return result
-}
+import { findColsWithCandidateRange, findRowsWithCandidateRange } from "./helpers.ts"
 
 const getColumnsFromCells = (cells: number[]): number[] => {
   const cols = new Set<number>()
@@ -110,46 +68,6 @@ const getSwordfishRowsFromCols = (
   return { allCells, rows }
 }
 
-const collectEliminationsForCols = (
-  grid: SudokuGrid,
-  mask: number,
-  digit: number,
-  cols: number[],
-  swordfishCells: Set<number>,
-): RawElimination[] => {
-  const eliminations: RawElimination[] = []
-  for (const col of cols) {
-    for (let row = 0; row < GRID_SIZE; row++) {
-      const idx = row * GRID_SIZE + col
-      if (swordfishCells.has(idx)) continue
-      if (grid.getCell(idx) !== 0) continue
-      if ((grid.getCandidates(idx) & mask) === 0) continue
-      eliminations.push({ index: idx, values: [digit] })
-    }
-  }
-  return eliminations
-}
-
-const collectEliminationsForRows = (
-  grid: SudokuGrid,
-  mask: number,
-  digit: number,
-  rows: number[],
-  swordfishCells: Set<number>,
-): RawElimination[] => {
-  const eliminations: RawElimination[] = []
-  for (const row of rows) {
-    for (let col = 0; col < GRID_SIZE; col++) {
-      const idx = row * GRID_SIZE + col
-      if (swordfishCells.has(idx)) continue
-      if (grid.getCell(idx) !== 0) continue
-      if ((grid.getCandidates(idx) & mask) === 0) continue
-      eliminations.push({ index: idx, values: [digit] })
-    }
-  }
-  return eliminations
-}
-
 const buildSwordfishMove = Effect.fn("Swordfish.buildMove")(function* (
   digit: number,
   allCells: number[],
@@ -167,18 +85,24 @@ const buildSwordfishMove = Effect.fn("Swordfish.buildMove")(function* (
 })
 
 const findSwordfishInRows = Effect.fn("Swordfish.findInRows")(function* (grid: SudokuGrid) {
-  for (let digit = 1; digit <= 9; digit++) {
+  for (let digit = 1; digit <= GRID_SIZE; digit++) {
     const mask = getMask(digit)
     if (mask === 0) continue
 
-    const rowsWithCandidates = findRowsWith2To3Candidates(grid, digit)
+    const rowsWithCandidates = findRowsWithCandidateRange(grid, digit, 2, 3)
     if (rowsWithCandidates.length < 3) continue
 
     for (const [row1, row2, row3] of getTriplets(rowsWithCandidates)) {
       const combo = getSwordfishColsFromRows(row1, row2, row3)
       if (combo === null) continue
       const swordfishCells = new Set(combo.allCells)
-      const eliminations = collectEliminationsForCols(grid, mask, digit, combo.cols, swordfishCells)
+      const indices: number[] = []
+      for (const col of combo.cols) {
+        for (let row = 0; row < GRID_SIZE; row++) {
+          indices.push(row * GRID_SIZE + col)
+        }
+      }
+      const eliminations = collectCandidateEliminations(grid, indices, digit, mask, swordfishCells)
       const move = yield* buildSwordfishMove(digit, combo.allCells, eliminations)
       if (Option.isSome(move)) return move
     }
@@ -188,18 +112,24 @@ const findSwordfishInRows = Effect.fn("Swordfish.findInRows")(function* (grid: S
 })
 
 const findSwordfishInCols = Effect.fn("Swordfish.findInCols")(function* (grid: SudokuGrid) {
-  for (let digit = 1; digit <= 9; digit++) {
+  for (let digit = 1; digit <= GRID_SIZE; digit++) {
     const mask = getMask(digit)
     if (mask === 0) continue
 
-    const colsWithCandidates = findColsWith2To3Candidates(grid, digit)
+    const colsWithCandidates = findColsWithCandidateRange(grid, digit, 2, 3)
     if (colsWithCandidates.length < 3) continue
 
     for (const [col1, col2, col3] of getTriplets(colsWithCandidates)) {
       const combo = getSwordfishRowsFromCols(col1, col2, col3)
       if (combo === null) continue
       const swordfishCells = new Set(combo.allCells)
-      const eliminations = collectEliminationsForRows(grid, mask, digit, combo.rows, swordfishCells)
+      const indices: number[] = []
+      for (const row of combo.rows) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+          indices.push(row * GRID_SIZE + col)
+        }
+      }
+      const eliminations = collectCandidateEliminations(grid, indices, digit, mask, swordfishCells)
       const move = yield* buildSwordfishMove(digit, combo.allCells, eliminations)
       if (Option.isSome(move)) return move
     }

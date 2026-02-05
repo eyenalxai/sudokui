@@ -1,11 +1,17 @@
-import type { CellData, NakedTechnique, RawElimination } from "./utils.ts"
+import type { CellData, NakedTechnique } from "./utils.ts"
 import { Effect, Option, ParseResult } from "effect"
 
 import { getCandidatesArray } from "../../grid/candidates.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
 import { TechniqueMove } from "../../technique.ts"
+import {
+  makeCellElimination,
+  makeCellIndex,
+  makeCellValue,
+  type RawElimination,
+} from "../helpers.ts"
 
-import { getCombinations, makeCellElimination, makeCellIndex, makeCellValue } from "./utils.ts"
+import { getCombinations } from "./utils.ts"
 
 /**
  * Collect eliminations for naked subset technique
@@ -78,9 +84,7 @@ export const findNakedSubsetInUnit = (
           technique,
           cellIndex: yield* makeCellIndex(indices[0]),
           value: yield* makeCellValue(values[0]),
-          eliminations: yield* Effect.forEach(eliminations, (elimination) =>
-            makeCellElimination(elimination),
-          ),
+          eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
         })
       }
     }

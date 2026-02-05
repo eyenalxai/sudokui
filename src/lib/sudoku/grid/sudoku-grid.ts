@@ -23,6 +23,19 @@ export interface Cell {
   fixed: boolean
 }
 
+const getCellIndexOrFail = (index: number): Effect.Effect<CellIndex, InvalidCellIndexError> =>
+  Effect.gen(function* () {
+    if (!isCellIndex(index)) {
+      return yield* Effect.fail(
+        new InvalidCellIndexError({
+          index,
+          message: `Invalid cell index: ${index}`,
+        }),
+      )
+    }
+    return index
+  })
+
 export class SudokuGrid {
   cells: Cell[]
 
@@ -119,38 +132,24 @@ export class SudokuGrid {
   > {
     const { cells } = this.getSnapshot()
     return Effect.gen(function* () {
-      if (index < 0 || index >= TOTAL_CELLS) {
-        return yield* Effect.fail(
-          new InvalidCellIndexError({
-            index,
-            message: `Invalid cell index: ${index}`,
-          }),
-        )
-      }
-      if (!isCellIndex(index)) {
-        return yield* Effect.fail(
-          new InvalidCellIndexError({
-            index,
-            message: `Invalid cell index: ${index}`,
-          }),
-        )
-      }
+      const cellIndex = yield* getCellIndexOrFail(index)
+
       if (value < 0 || value > GRID_SIZE || !isCellValue(value)) {
         return yield* Effect.fail(
           new InvalidCellValueError({
-            cellIndex: index,
+            cellIndex,
             value,
             message: `Invalid cell value: ${value}`,
           }),
         )
       }
 
-      const cell = cells[index]
+      const cell = cells[cellIndex]
       if (cell === undefined) {
         return yield* Effect.fail(
           new InvalidCellIndexError({
-            index,
-            message: `Invalid cell index: ${index}`,
+            index: cellIndex,
+            message: `Invalid cell index: ${cellIndex}`,
           }),
         )
       }
@@ -161,24 +160,17 @@ export class SudokuGrid {
         return
       }
 
-      const peers = getPeers(index)
+      const peers = getPeers(cellIndex)
       for (const peer of peers) {
         const peerCell = cells[peer]
         if (peerCell !== undefined && peerCell.value === value) {
-          if (!isCellIndex(peer)) {
-            return yield* Effect.fail(
-              new InvalidCellIndexError({
-                index: peer,
-                message: `Invalid cell index: ${peer}`,
-              }),
-            )
-          }
+          const peerIndex = yield* getCellIndexOrFail(peer)
           return yield* Effect.fail(
             new CellConflictError({
-              cellIndex: index,
+              cellIndex,
               value,
-              conflictingIndex: peer,
-              message: `Cell conflict at ${index} with peer ${peer}`,
+              conflictingIndex: peerIndex,
+              message: `Cell conflict at ${cellIndex} with peer ${peerIndex}`,
             }),
           )
         }
@@ -198,18 +190,11 @@ export class SudokuGrid {
         if (peerCell.value === 0) {
           peerCell.candidates &= ~getCandidateMask(value)
           if (peerCell.candidates === 0) {
-            if (!isCellIndex(peer)) {
-              return yield* Effect.fail(
-                new InvalidCellIndexError({
-                  index: peer,
-                  message: `Invalid cell index: ${peer}`,
-                }),
-              )
-            }
+            const peerIndex = yield* getCellIndexOrFail(peer)
             return yield* Effect.fail(
               new NoCandidatesRemainingError({
-                cellIndex: peer,
-                message: `No candidates remaining for cell ${peer}`,
+                cellIndex: peerIndex,
+                message: `No candidates remaining for cell ${peerIndex}`,
               }),
             )
           }
@@ -224,30 +209,13 @@ export class SudokuGrid {
   ): Effect.Effect<void, InvalidCellIndexError | NoCandidatesRemainingError> {
     const { cells } = this.getSnapshot()
     return Effect.gen(function* () {
-      if (index < 0 || index >= TOTAL_CELLS) {
-        return yield* Effect.fail(
-          new InvalidCellIndexError({
-            index,
-            message: `Invalid cell index: ${index}`,
-          }),
-        )
-      }
-
-      if (!isCellIndex(index)) {
-        return yield* Effect.fail(
-          new InvalidCellIndexError({
-            index,
-            message: `Invalid cell index: ${index}`,
-          }),
-        )
-      }
-
-      const cell = cells[index]
+      const cellIndex = yield* getCellIndexOrFail(index)
+      const cell = cells[cellIndex]
       if (cell === undefined) {
         return yield* Effect.fail(
           new InvalidCellIndexError({
-            index,
-            message: `Invalid cell index: ${index}`,
+            index: cellIndex,
+            message: `Invalid cell index: ${cellIndex}`,
           }),
         )
       }
@@ -257,8 +225,8 @@ export class SudokuGrid {
       if (cell.candidates === 0) {
         return yield* Effect.fail(
           new NoCandidatesRemainingError({
-            cellIndex: index,
-            message: `No candidates remaining for cell ${index}`,
+            cellIndex,
+            message: `No candidates remaining for cell ${cellIndex}`,
           }),
         )
       }

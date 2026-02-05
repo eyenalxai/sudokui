@@ -1,12 +1,18 @@
-import type { CellData, HiddenTechnique, RawElimination } from "./utils.ts"
+import type { CellData, HiddenTechnique } from "./utils.ts"
 import { Effect, Option, ParseResult } from "effect"
 
 import { getCandidatesArray } from "../../grid/candidates.ts"
 import { GRID_SIZE } from "../../grid/constants.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
 import { TechniqueMove } from "../../technique.ts"
+import {
+  makeCellElimination,
+  makeCellIndex,
+  makeCellValue,
+  type RawElimination,
+} from "../helpers.ts"
 
-import { getCombinations, makeCellElimination, makeCellIndex, makeCellValue } from "./utils.ts"
+import { getCombinations } from "./utils.ts"
 
 /**
  * Hidden Subsets: Find n values that appear in only n cells within a unit
@@ -85,9 +91,7 @@ export const findHiddenSubsetInUnit = (
             technique,
             cellIndex: yield* makeCellIndex(firstIndex),
             value: yield* makeCellValue(firstValue),
-            eliminations: yield* Effect.forEach(eliminations, (elimination) =>
-              makeCellElimination(elimination),
-            ),
+            eliminations: yield* Effect.forEach(eliminations, makeCellElimination),
           })
         }
       }

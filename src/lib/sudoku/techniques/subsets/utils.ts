@@ -1,10 +1,3 @@
-export {
-  makeCellElimination,
-  makeCellIndex,
-  makeCellValue,
-  type RawElimination,
-} from "../helpers.ts"
-
 export type NakedTechnique = "NAKED_PAIR" | "NAKED_TRIPLE" | "NAKED_QUADRUPLE"
 export type HiddenTechnique = "HIDDEN_PAIR" | "HIDDEN_TRIPLE" | "HIDDEN_QUADRUPLE"
 
