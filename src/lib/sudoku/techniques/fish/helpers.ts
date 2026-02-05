@@ -1,5 +1,5 @@
 import { BLOCK_SIZE, GRID_SIZE } from "../../grid/constants.ts"
-import { getPeers } from "../../grid/helpers.ts"
+import { getPeers, indexToRow, indexToCol } from "../../grid/helpers.ts"
 import { SudokuGrid } from "../../grid/sudoku-grid.ts"
 import { getMask, type RawElimination } from "../helpers.ts"
 
@@ -159,9 +159,9 @@ export const collectPeerIntersectionEliminations = (
 }
 
 export const sameCol = (idx1: number, idx2: number): boolean => {
-  return idx1 % GRID_SIZE === idx2 % GRID_SIZE
+  return indexToCol(idx1) === indexToCol(idx2)
 }
 
 export const sameRow = (idx1: number, idx2: number): boolean => {
-  return Math.floor(idx1 / GRID_SIZE) === Math.floor(idx2 / GRID_SIZE)
+  return indexToRow(idx1) === indexToRow(idx2)
 }

@@ -10,14 +10,7 @@ import { findTwoStringKite } from "./techniques/fish/two-string-kite.ts"
 import { findXWing } from "./techniques/fish/xwing.ts"
 import { findLockedCandidates, findPointingCandidates } from "./techniques/intersections.ts"
 import { findFullHouse, findNakedSingle, findHiddenSingle } from "./techniques/singles.ts"
-import {
-  findHiddenPair,
-  findHiddenQuad,
-  findHiddenTriple,
-  findNakedPair,
-  findNakedQuad,
-  findNakedTriple,
-} from "./techniques/subsets.ts"
+import { findSubsetInAllUnits } from "./techniques/subsets/search.ts"
 
 export class NoMoveFoundError extends Schema.TaggedError<NoMoveFoundError>()("NoMoveFoundError", {
   message: Schema.String,
@@ -42,12 +35,12 @@ const TECHNIQUES: ReadonlyArray<TechniqueInfo> = [
   { name: "HiddenSingle", find: findHiddenSingle },
   { name: "PointingCandidates", find: findPointingCandidates },
   { name: "LockedCandidates", find: findLockedCandidates },
-  { name: "NakedPair", find: findNakedPair },
-  { name: "HiddenPair", find: findHiddenPair },
-  { name: "NakedTriple", find: findNakedTriple },
-  { name: "HiddenTriple", find: findHiddenTriple },
-  { name: "NakedQuad", find: findNakedQuad },
-  { name: "HiddenQuad", find: findHiddenQuad },
+  { name: "NakedPair", find: (g) => findSubsetInAllUnits(g, 2, "naked") },
+  { name: "HiddenPair", find: (g) => findSubsetInAllUnits(g, 2, "hidden") },
+  { name: "NakedTriple", find: (g) => findSubsetInAllUnits(g, 3, "naked") },
+  { name: "HiddenTriple", find: (g) => findSubsetInAllUnits(g, 3, "hidden") },
+  { name: "NakedQuad", find: (g) => findSubsetInAllUnits(g, 4, "naked") },
+  { name: "HiddenQuad", find: (g) => findSubsetInAllUnits(g, 4, "hidden") },
   { name: "Skyscraper", find: findSkyscraper },
   { name: "XWing", find: findXWing },
   { name: "TwoStringKite", find: findTwoStringKite },

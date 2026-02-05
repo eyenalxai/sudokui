@@ -108,4 +108,3 @@ export const SolutionResult = Schema.Struct({
   finalGrid: Schema.optional(Schema.String),
 })
 export type SolutionResult = typeof SolutionResult.Type
-
