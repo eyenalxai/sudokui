@@ -152,7 +152,7 @@
     "no-console": "off",
     "eslint/eqeqeq": "error",
     "eslint/max-classes-per-file": "off",
-    "eslint/max-lines": ["error", { "max": 400 }],
+    "eslint/max-lines": "error",
     "eslint/max-lines-per-function": "off",
     "eslint/no-inline-comments": "off",
     "eslint/no-lonely-if": "error",
