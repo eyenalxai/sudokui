@@ -1,63 +1,20 @@
 import type { SudokuGrid } from "../../lib/sudoku/grid/sudoku-grid"
-import {
-  FrameBufferRenderable,
-  OptimizedBuffer,
-  RGBA,
-  type FrameBufferOptions,
-  type RenderContext,
-} from "@opentui/core"
+import { FrameBufferRenderable, OptimizedBuffer, RGBA, type RenderContext } from "@opentui/core"
 import { extend } from "@opentui/react"
 
-import { drawCandidates, drawCellValue } from "./sudoku-grid-draw"
-
-export type SudokuGridDisplayProps = {
-  readonly grid: SudokuGrid
-  readonly selectedCell: number
-  readonly highlightedNumber?: number | null
-}
-
-export type SudokuGridRenderableOptions = FrameBufferOptions & {
-  grid: SudokuGrid
-  selectedCell: number
-  highlightedNumber: number | null
-  cellWidth?: number
-  cellHeight?: number
-  gridColor?: string | RGBA
-  boxBorderColor?: string | RGBA
-  highlightColor?: string | RGBA
-  backgroundColor?: string | RGBA
-  fixedColor?: string | RGBA
-  valueColor?: string | RGBA
-  selectedBackgroundColor?: string | RGBA
-  selectedTextColor?: string | RGBA
-  candidateColor?: string | RGBA
-}
+import {
+  drawCandidates,
+  drawCellValue,
+  GRID_CHARS,
+  resolveColor,
+  type SudokuGridRenderableOptions,
+} from "./sudoku-grid-draw"
 
 const GRID_SIZE = 9
 const CELL_WIDTH = 5
 const CELL_HEIGHT = 3
 
 const isBoxBoundary = (index: number): boolean => index % 3 === 0
-
-const GRID_CHARS = {
-  horizontal: "─",
-  vertical: "│",
-  topLeft: "┌",
-  topRight: "┐",
-  bottomLeft: "└",
-  bottomRight: "┘",
-  topT: "┬",
-  bottomT: "┴",
-  leftT: "├",
-  rightT: "┤",
-  cross: "┼",
-}
-
-const resolveColor = (value: string | RGBA | undefined, fallback: RGBA): RGBA => {
-  if (value instanceof RGBA) return value
-  if (value !== undefined) return RGBA.fromHex(value)
-  return fallback
-}
 
 export class SudokuGridRenderable extends FrameBufferRenderable {
   private _grid: SudokuGrid
@@ -74,6 +31,7 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
   private _selectedBackgroundColor: RGBA
   private _selectedTextColor: RGBA
   private _candidateColor: RGBA
+  private _highlightTextColor: RGBA
 
   constructor(ctx: RenderContext, options: SudokuGridRenderableOptions) {
     super(ctx, options)
@@ -95,6 +53,7 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
     )
     this._selectedTextColor = resolveColor(options.selectedTextColor, RGBA.fromHex("#000000"))
     this._candidateColor = resolveColor(options.candidateColor, RGBA.fromHex("#666666"))
+    this._highlightTextColor = resolveColor(options.highlightTextColor, RGBA.fromHex("#ffffff"))
   }
 
   set grid(value: SudokuGrid) {
@@ -156,6 +115,10 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
   }
   set candidateColor(value: string | RGBA) {
     this._candidateColor = resolveColor(value, this._candidateColor)
+    this.requestRender()
+  }
+  set highlightTextColor(value: string | RGBA) {
+    this._highlightTextColor = resolveColor(value, this._highlightTextColor)
     this.requestRender()
   }
 
@@ -272,6 +235,7 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
             this._highlightColor,
             this._selectedBackgroundColor,
             this._backgroundColor,
+            this._highlightTextColor,
           )
         } else {
           const isHighlighted =
@@ -291,6 +255,7 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
             this._selectedBackgroundColor,
             this._highlightColor,
             this._backgroundColor,
+            this._highlightTextColor,
           )
         }
       }

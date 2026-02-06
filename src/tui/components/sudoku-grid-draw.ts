@@ -1,7 +1,52 @@
-import type { Cell } from "../../lib/sudoku/grid/sudoku-grid"
+import type { Cell, SudokuGrid } from "../../lib/sudoku/grid/sudoku-grid"
+import type { FrameBufferOptions } from "@opentui/core"
 import { OptimizedBuffer, RGBA, TextAttributes } from "@opentui/core"
 
 import { getCandidatesArray } from "../../lib/sudoku/grid/candidates"
+
+export type SudokuGridDisplayProps = {
+  readonly grid: SudokuGrid
+  readonly selectedCell: number
+  readonly highlightedNumber?: number | null
+}
+
+export type SudokuGridRenderableOptions = FrameBufferOptions & {
+  grid: SudokuGrid
+  selectedCell: number
+  highlightedNumber: number | null
+  cellWidth?: number
+  cellHeight?: number
+  gridColor?: string | RGBA
+  boxBorderColor?: string | RGBA
+  highlightColor?: string | RGBA
+  backgroundColor?: string | RGBA
+  fixedColor?: string | RGBA
+  valueColor?: string | RGBA
+  selectedBackgroundColor?: string | RGBA
+  selectedTextColor?: string | RGBA
+  candidateColor?: string | RGBA
+  highlightTextColor?: string | RGBA
+}
+
+export const GRID_CHARS = {
+  horizontal: "─",
+  vertical: "│",
+  topLeft: "┌",
+  topRight: "┐",
+  bottomLeft: "└",
+  bottomRight: "┘",
+  topT: "┬",
+  bottomT: "┴",
+  leftT: "├",
+  rightT: "┤",
+  cross: "┼",
+}
+
+export const resolveColor = (value: string | RGBA | undefined, fallback: RGBA): RGBA => {
+  if (value instanceof RGBA) return value
+  if (value !== undefined) return RGBA.fromHex(value)
+  return fallback
+}
 
 export const drawCandidates = (
   frameBuffer: OptimizedBuffer,
@@ -15,6 +60,7 @@ export const drawCandidates = (
   highlightColor: RGBA,
   selectedBackgroundColor: RGBA,
   backgroundColor: RGBA,
+  highlightTextColor: RGBA,
 ): void => {
   const candidates = getCandidatesArray(cell.candidates)
   const bg = isSelected ? selectedBackgroundColor : backgroundColor
@@ -31,7 +77,7 @@ export const drawCandidates = (
         candidate.toString(),
         x,
         y,
-        candidateColor,
+        isHighlighted ? highlightTextColor : candidateColor,
         isHighlighted ? highlightColor : bg,
       )
     }
@@ -53,9 +99,16 @@ export const drawCellValue = (
   selectedBackgroundColor: RGBA,
   highlightColor: RGBA,
   backgroundColor: RGBA,
+  highlightTextColor: RGBA,
 ): void => {
   const isFixed = cell.fixed
-  const fg = isSelected ? selectedTextColor : isFixed ? fixedColor : valueColor
+  const fg = isSelected
+    ? selectedTextColor
+    : isHighlighted
+      ? highlightTextColor
+      : isFixed
+        ? fixedColor
+        : valueColor
   const bg = isSelected ? selectedBackgroundColor : isHighlighted ? highlightColor : backgroundColor
   const attributes = isFixed ? TextAttributes.BOLD : 0
 

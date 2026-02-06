@@ -1,7 +1,7 @@
 // oxlint-disable-next-line import/no-unassigned-import: Must load module to register sudokuGrid component with OpenTUI's extend() function
 import "./sudoku-grid-renderable"
 
-import type { SudokuGridDisplayProps } from "./sudoku-grid-renderable"
+import type { SudokuGridDisplayProps } from "./sudoku-grid-draw"
 import type { ReactNode } from "react"
 
 import { useTheme } from "../providers/theme"
@@ -40,6 +40,7 @@ export const SudokuGridDisplay = ({
       selectedBackgroundColor={theme.primary}
       selectedTextColor={theme.background}
       candidateColor={theme.textMuted}
+      highlightTextColor={theme.background}
     />
   )
 }
