@@ -16,15 +16,18 @@ import { useTheme } from "../providers/theme"
 type SudokuGridDisplayProps = {
   readonly grid: SudokuGrid
   readonly selectedCell: number
+  readonly highlightedNumber?: number | null
 }
 
 type SudokuGridRenderableOptions = FrameBufferOptions & {
   grid: SudokuGrid
   selectedCell: number
+  highlightedNumber: number | null
   cellWidth?: number
   cellHeight?: number
   gridColor?: string | RGBA
   boxBorderColor?: string | RGBA
+  highlightColor?: string | RGBA
   backgroundColor?: string | RGBA
   fixedColor?: string | RGBA
   valueColor?: string | RGBA
@@ -62,10 +65,12 @@ const resolveColor = (value: string | RGBA | undefined, fallback: RGBA): RGBA =>
 class SudokuGridRenderable extends FrameBufferRenderable {
   private _grid: SudokuGrid
   private _selectedCell: number
+  private _highlightedNumber: number | null
   private _cellWidth: number
   private _cellHeight: number
   private _gridColor: RGBA
   private _boxBorderColor: RGBA
+  private _highlightColor: RGBA
   private _backgroundColor: RGBA
   private _fixedColor: RGBA
   private _valueColor: RGBA
@@ -77,11 +82,13 @@ class SudokuGridRenderable extends FrameBufferRenderable {
     super(ctx, options)
     this._grid = options.grid
     this._selectedCell = options.selectedCell
+    this._highlightedNumber = options.highlightedNumber ?? null
     this._cellWidth = Math.max(1, Math.floor(options.cellWidth ?? CELL_WIDTH))
     this._cellHeight = Math.max(1, Math.floor(options.cellHeight ?? CELL_HEIGHT))
 
     const fallbackGrid = RGBA.fromHex("#666666")
     const fallbackBoxBorder = RGBA.fromHex("#3399ff")
+    const fallbackHighlight = RGBA.fromHex("#2a4a6a")
     const fallbackBg = RGBA.fromHex("#000000")
     const fallbackFixed = RGBA.fromHex("#ffffff")
     const fallbackValue = RGBA.fromHex("#cccccc")
@@ -91,6 +98,7 @@ class SudokuGridRenderable extends FrameBufferRenderable {
 
     this._gridColor = resolveColor(options.gridColor, fallbackGrid)
     this._boxBorderColor = resolveColor(options.boxBorderColor, fallbackBoxBorder)
+    this._highlightColor = resolveColor(options.highlightColor, fallbackHighlight)
     this._backgroundColor = resolveColor(options.backgroundColor, fallbackBg)
     this._fixedColor = resolveColor(options.fixedColor, fallbackFixed)
     this._valueColor = resolveColor(options.valueColor, fallbackValue)
@@ -112,6 +120,11 @@ class SudokuGridRenderable extends FrameBufferRenderable {
     this.requestRender()
   }
 
+  set highlightedNumber(value: number | null) {
+    this._highlightedNumber = value
+    this.requestRender()
+  }
+
   set cellWidth(value: number) {
     this._cellWidth = Math.max(1, Math.floor(value))
     this.requestRender()
@@ -129,6 +142,11 @@ class SudokuGridRenderable extends FrameBufferRenderable {
 
   set boxBorderColor(value: string | RGBA) {
     this._boxBorderColor = resolveColor(value, this._boxBorderColor)
+    this.requestRender()
+  }
+
+  set highlightColor(value: string | RGBA) {
+    this._highlightColor = resolveColor(value, this._highlightColor)
     this.requestRender()
   }
 
@@ -178,6 +196,7 @@ class SudokuGridRenderable extends FrameBufferRenderable {
 
     frameBuffer.fillRect(0, 0, this.width, this.height, this._backgroundColor)
 
+    // Selected cell highlight (drawn after background so it takes priority)
     if (this._selectedCell >= 0 && this._selectedCell < GRID_SIZE * GRID_SIZE) {
       const row = Math.floor(this._selectedCell / GRID_SIZE)
       const col = this._selectedCell % GRID_SIZE
@@ -264,7 +283,18 @@ class SudokuGridRenderable extends FrameBufferRenderable {
         if (cell.value === 0) {
           this.drawCandidates(frameBuffer, cell, cellX, cellY, candidatePositions, isSelected)
         } else {
-          this.drawCellValue(frameBuffer, cell, cellX, cellY, centerX, centerY, isSelected)
+          const isHighlighted =
+            cell.value === this._highlightedNumber && cellIndex !== this._selectedCell
+          this.drawCellValue(
+            frameBuffer,
+            cell,
+            cellX,
+            cellY,
+            centerX,
+            centerY,
+            isSelected,
+            isHighlighted,
+          )
         }
       }
     }
@@ -285,7 +315,18 @@ class SudokuGridRenderable extends FrameBufferRenderable {
       if (pos !== undefined) {
         const x = cellX + pos[0]
         const y = cellY + pos[1]
-        frameBuffer.drawText(candidate.toString(), x, y, this._candidateColor, bg)
+        // Highlight background if this candidate matches the highlighted number
+        const isHighlighted = candidate === this._highlightedNumber
+        if (isHighlighted) {
+          frameBuffer.fillRect(x, y, 1, 1, this._highlightColor)
+        }
+        frameBuffer.drawText(
+          candidate.toString(),
+          x,
+          y,
+          this._candidateColor,
+          isHighlighted ? this._highlightColor : bg,
+        )
       }
     }
   }
@@ -298,14 +339,20 @@ class SudokuGridRenderable extends FrameBufferRenderable {
     centerX: number,
     centerY: number,
     isSelected: boolean,
+    isHighlighted: boolean,
   ): void {
     const isFixed = cell.fixed
     const fg = isSelected ? this._selectedTextColor : isFixed ? this._fixedColor : this._valueColor
+    const bg = isSelected
+      ? this._selectedBackgroundColor
+      : isHighlighted
+        ? this._highlightColor
+        : this._backgroundColor
     const attributes = isFixed ? TextAttributes.BOLD : 0
 
     const x = cellX + centerX
     const y = cellY + centerY
-    frameBuffer.drawText(cell.value.toString(), x, y, fg, undefined, attributes)
+    frameBuffer.drawText(cell.value.toString(), x, y, fg, bg, attributes)
   }
 }
 
@@ -317,7 +364,11 @@ declare module "@opentui/react" {
 
 extend({ sudokuGrid: SudokuGridRenderable })
 
-export const SudokuGridDisplay = ({ grid, selectedCell }: SudokuGridDisplayProps): ReactNode => {
+export const SudokuGridDisplay = ({
+  grid,
+  selectedCell,
+  highlightedNumber,
+}: SudokuGridDisplayProps): ReactNode => {
   const theme = useTheme()
   const cellWidth = CELL_WIDTH
   const cellHeight = CELL_HEIGHT
@@ -328,6 +379,7 @@ export const SudokuGridDisplay = ({ grid, selectedCell }: SudokuGridDisplayProps
     <sudokuGrid
       grid={grid}
       selectedCell={selectedCell}
+      highlightedNumber={highlightedNumber ?? null}
       cellWidth={cellWidth}
       cellHeight={cellHeight}
       width={gridWidth}
@@ -335,6 +387,7 @@ export const SudokuGridDisplay = ({ grid, selectedCell }: SudokuGridDisplayProps
       flexShrink={0}
       gridColor={theme.border}
       boxBorderColor={theme.text}
+      highlightColor={theme.secondary}
       backgroundColor={theme.background}
       fixedColor={theme.text}
       valueColor={theme.secondary}

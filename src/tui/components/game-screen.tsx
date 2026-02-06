@@ -1,3 +1,5 @@
+import { writeFileSync } from "node:fs"
+
 import type { SudokuGrid } from "../../lib/sudoku/grid/sudoku-grid"
 import type { DifficultyLevel, Puzzle } from "../../lib/sudoku/puzzle-sets"
 import { useKeyboard } from "@opentui/react"
@@ -23,6 +25,7 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
   const theme = useTheme()
   const toast = useToast()
   const [selectedCell, setSelectedCell] = useState(0)
+  const [highlightedNumber, setHighlightedNumber] = useState<number | null>(null)
   const [, forceUpdate] = useState({})
 
   const moveCursor = useCallback((direction: "up" | "down" | "left" | "right") => {
@@ -87,6 +90,11 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
   )
 
   useKeyboard((key) => {
+    // Debug: log ALL keyboard input to file
+    const logEntry = `${new Date().toISOString()}: name=${key.name} meta=${key.meta} ctrl=${key.ctrl} shift=${key.shift} code=${key.code}\n`
+    try {
+      writeFileSync("/tmp/sudokui-keys.log", logEntry, { flag: "a" })
+    } catch {}
     // Navigation
     if (key.name === "up" || key.name === "w") {
       moveCursor("up")
@@ -96,6 +104,25 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
       moveCursor("left")
     } else if (key.name === "right" || key.name === "d") {
       moveCursor("right")
+    }
+    // Alt+number to highlight candidates (check before regular number input)
+    else if (key.meta) {
+      const numpadMap: Record<string, number> = {
+        kp1: 1,
+        kp2: 2,
+        kp3: 3,
+        kp4: 4,
+        kp5: 5,
+        kp6: 6,
+        kp7: 7,
+        kp8: 8,
+        kp9: 9,
+      }
+      const num =
+        numpadMap[key.name] ?? (key.name >= "1" && key.name <= "9" ? parseInt(key.name, 10) : null)
+      if (num !== null) {
+        setHighlightedNumber((prev) => (prev === num ? null : num))
+      }
     }
     // Number input
     else if (key.name >= "1" && key.name <= "9") {
@@ -120,10 +147,15 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
         <text fg={theme.textMuted}>Difficulty:</text>
         <text fg={theme.text}>{difficulty}</text>
       </box>
-      <SudokuGridDisplay grid={grid} selectedCell={selectedCell} />
+      <SudokuGridDisplay
+        grid={grid}
+        selectedCell={selectedCell}
+        highlightedNumber={highlightedNumber}
+      />
       <box height={1} />
       <text fg={theme.textMuted}>
-        ↑/↓/←/→ or wasd to move • 1-9 to fill • 0/Del/Back to clear • Esc/q to menu
+        ↑/↓/←/→ or wasd to move • 1-9 to fill • 0/Del/Back to clear • Alt+1-9 to highlight • Esc/q
+        to menu
       </text>
     </box>
   )
