@@ -1,5 +1,3 @@
-import { writeFileSync } from "node:fs"
-
 import type { SudokuGrid } from "../../lib/sudoku/grid/sudoku-grid"
 import type { DifficultyLevel, Puzzle } from "../../lib/sudoku/puzzle-sets"
 import { useKeyboard } from "@opentui/react"
@@ -90,11 +88,6 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
   )
 
   useKeyboard((key) => {
-    // Debug: log ALL keyboard input to file
-    const logEntry = `${new Date().toISOString()}: name=${key.name} meta=${key.meta} ctrl=${key.ctrl} shift=${key.shift} code=${key.code}\n`
-    try {
-      writeFileSync("/tmp/sudokui-keys.log", logEntry, { flag: "a" })
-    } catch {}
     // Navigation
     if (key.name === "up" || key.name === "w") {
       moveCursor("up")
