@@ -5,7 +5,9 @@ import { Effect } from "effect"
 import type { ReactNode } from "react"
 import { useCallback, useState } from "react"
 
+import { isComplete, isValid } from "../../lib/sudoku/grid/validation"
 import { useTheme } from "../providers/theme"
+import { useToast } from "../providers/toast"
 
 import { SudokuGridDisplay } from "./sudoku-grid"
 
@@ -20,9 +22,22 @@ type GameScreenProps = {
 
 export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps): ReactNode => {
   const theme = useTheme()
+  const toast = useToast()
   const [selectedCell, setSelectedCell] = useState(0)
   const [highlightedNumber, setHighlightedNumber] = useState<number | null>(null)
   const [, forceUpdate] = useState({})
+  const [hasWon, setHasWon] = useState(false)
+
+  const checkForWin = useCallback(() => {
+    if (!hasWon && isComplete(grid) && isValid(grid)) {
+      setHasWon(true)
+      toast.show({
+        title: "Puzzle solved",
+        message: "Great job! You completed the puzzle.",
+        variant: "success",
+      })
+    }
+  }, [grid, hasWon, toast])
 
   const moveCursor = useCallback((direction: "up" | "down" | "left" | "right") => {
     setSelectedCell((prev) => {
@@ -56,8 +71,14 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
         void Effect.runPromise(
           Effect.gen(function* () {
             yield* grid.setCell(selectedCell, 0)
-            forceUpdate({})
-          }),
+          }).pipe(
+            Effect.ensuring(
+              Effect.sync(() => {
+                forceUpdate({})
+                checkForWin()
+              }),
+            ),
+          ),
         )
         return
       }
@@ -71,11 +92,16 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
           yield* grid.setCell(selectedCell, value)
         }).pipe(
           Effect.catchTag("CellConflictError", () => Effect.void),
-          Effect.ensuring(Effect.sync(() => forceUpdate({}))),
+          Effect.ensuring(
+            Effect.sync(() => {
+              forceUpdate({})
+              checkForWin()
+            }),
+          ),
         ),
       )
     },
-    [grid, selectedCell],
+    [grid, selectedCell, checkForWin],
   )
 
   useKeyboard((key) => {

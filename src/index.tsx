@@ -1,7 +1,7 @@
 import { BunContext, BunRuntime } from "@effect/platform-bun"
 import { createCliRenderer } from "@opentui/core"
 import { createRoot } from "@opentui/react"
-import { Effect } from "effect"
+import { Effect, Schema } from "effect"
 
 import { App } from "./tui/components/app"
 import { RootBox } from "./tui/components/root-box"
@@ -10,13 +10,27 @@ import { ExitProvider } from "./tui/providers/exit"
 import { ThemeProvider } from "./tui/providers/theme"
 import { ToastProvider } from "./tui/providers/toast"
 
+class RendererInitError extends Schema.TaggedError<RendererInitError>()("RendererInitError", {
+  message: Schema.String,
+  cause: Schema.optional(Schema.String),
+}) {}
+
+class RenderError extends Schema.TaggedError<RenderError>()("RenderError", {
+  message: Schema.String,
+  cause: Schema.optional(Schema.String),
+}) {}
+
 const run = Effect.tryPromise({
   try: async () =>
     createCliRenderer({
       exitOnCtrlC: false,
       useKittyKeyboard: {},
     }),
-  catch: (error) => new Error(typeof error === "string" ? error : "Failed to create CLI renderer"),
+  catch: (error) =>
+    new RendererInitError({
+      message: "Failed to create CLI renderer",
+      cause: typeof error === "string" ? error : undefined,
+    }),
 }).pipe(
   Effect.andThen((renderer) =>
     Effect.try({
@@ -35,7 +49,10 @@ const run = Effect.tryPromise({
         )
       },
       catch: (error) =>
-        new Error(typeof error === "string" ? error : "Failed to render TUI application"),
+        new RenderError({
+          message: "Failed to render TUI application",
+          cause: typeof error === "string" ? error : undefined,
+        }),
     }),
   ),
   Effect.provide(BunContext.layer),

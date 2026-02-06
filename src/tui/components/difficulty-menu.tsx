@@ -12,8 +12,11 @@ import {
   getRandomPuzzle,
   isDifficultyLevel,
 } from "../../lib/sudoku/puzzle-sets"
+import { useExit } from "../providers/exit"
 import { useTheme } from "../providers/theme"
 import { useToast } from "../providers/toast"
+
+const difficulties = getAllDifficulties()
 
 type DifficultyMenuProps = {
   readonly onSelectDifficulty: (
@@ -24,11 +27,10 @@ type DifficultyMenuProps = {
 }
 
 export const DifficultyMenu = ({ onSelectDifficulty }: DifficultyMenuProps): ReactNode => {
+  const exit = useExit()
   const theme = useTheme()
   const toast = useToast()
   const selectRef = useRef<SelectRenderable>(null)
-
-  const difficulties = getAllDifficulties()
 
   const options = useMemo(() => {
     return difficulties.map((difficulty) => {
@@ -44,7 +46,7 @@ export const DifficultyMenu = ({ onSelectDifficulty }: DifficultyMenuProps): Rea
 
   useKeyboard((key) => {
     if ((key.name === "q" || key.name === "escape") && !key.ctrl) {
-      process.exit(0)
+      exit()
     }
   })
 
@@ -60,11 +62,28 @@ export const DifficultyMenu = ({ onSelectDifficulty }: DifficultyMenuProps): Rea
         const grid = yield* SudokuGrid.fromString(puzzle.grid)
         onSelectDifficulty(difficulty, puzzle, grid)
       }).pipe(
-        Effect.catchAll((error) =>
-          Effect.sync(() => {
-            toast.error(error, "Failed to load puzzle")
-          }),
-        ),
+        Effect.catchTags({
+          InvalidPuzzleError: (error) =>
+            Effect.sync(() => {
+              toast.error(error, "Failed to load puzzle")
+            }),
+          InvalidCellIndexError: (error) =>
+            Effect.sync(() => {
+              toast.error(error, "Failed to load puzzle")
+            }),
+          InvalidCellValueError: (error) =>
+            Effect.sync(() => {
+              toast.error(error, "Failed to load puzzle")
+            }),
+          CellConflictError: (error) =>
+            Effect.sync(() => {
+              toast.error(error, "Failed to load puzzle")
+            }),
+          NoCandidatesRemainingError: (error) =>
+            Effect.sync(() => {
+              toast.error(error, "Failed to load puzzle")
+            }),
+        }),
       ),
     )
   }

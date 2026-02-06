@@ -154,51 +154,65 @@ export class SudokuGrid {
         )
       }
 
+      const peers = getPeers(cellIndex)
+      let conflictingIndex: CellIndex | null = null
+      if (value !== 0) {
+        for (const peer of peers) {
+          const peerCell = cells[peer]
+          if (peerCell !== undefined && peerCell.value === value) {
+            conflictingIndex = yield* getCellIndexOrFail(peer)
+            break
+          }
+        }
+      }
+
       cell.value = value
       cell.fixed = fixed
-      if (value === 0) {
-        return
-      }
 
-      const peers = getPeers(cellIndex)
-      for (const peer of peers) {
-        const peerCell = cells[peer]
-        if (peerCell !== undefined && peerCell.value === value) {
-          const peerIndex = yield* getCellIndexOrFail(peer)
-          return yield* Effect.fail(
-            new CellConflictError({
-              cellIndex,
-              value,
-              conflictingIndex: peerIndex,
-              message: `Cell conflict at ${cellIndex} with peer ${peerIndex}`,
-            }),
-          )
-        }
-      }
-
-      cell.candidates = getCandidateMask(value)
-      for (const peer of peers) {
-        const peerCell = cells[peer]
-        if (peerCell === undefined) {
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        const currentCell = cells[i]
+        if (currentCell === undefined) {
           return yield* Effect.fail(
             new InvalidCellIndexError({
-              index: peer,
-              message: `Invalid cell index: ${peer}`,
+              index: i,
+              message: `Invalid cell index: ${i}`,
             }),
           )
         }
-        if (peerCell.value === 0) {
-          peerCell.candidates &= ~getCandidateMask(value)
-          if (peerCell.candidates === 0) {
-            const peerIndex = yield* getCellIndexOrFail(peer)
+
+        if (currentCell.value === 0) {
+          let candidates = ALL_CANDIDATES
+          const currentPeers = getPeers(i)
+          for (const peer of currentPeers) {
+            const peerCell = cells[peer]
+            if (peerCell !== undefined && peerCell.value !== 0) {
+              candidates &= ~getCandidateMask(peerCell.value)
+            }
+          }
+          currentCell.candidates = candidates
+          if (candidates === 0) {
+            const candidateIndex = yield* getCellIndexOrFail(i)
             return yield* Effect.fail(
               new NoCandidatesRemainingError({
-                cellIndex: peerIndex,
-                message: `No candidates remaining for cell ${peerIndex}`,
+                cellIndex: candidateIndex,
+                message: `No candidates remaining for cell ${candidateIndex}`,
               }),
             )
           }
+        } else {
+          currentCell.candidates = getCandidateMask(currentCell.value)
         }
+      }
+
+      if (conflictingIndex !== null && value !== 0) {
+        return yield* Effect.fail(
+          new CellConflictError({
+            cellIndex,
+            value,
+            conflictingIndex,
+            message: `Cell conflict at ${cellIndex} with peer ${conflictingIndex}`,
+          }),
+        )
       }
     })
   }

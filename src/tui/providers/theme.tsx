@@ -32,7 +32,10 @@ const writeCache = (input: PaletteInput) =>
     yield* fs.writeFileString(cachePath, JSON.stringify(input))
   }).pipe(
     Effect.provide(BunContext.layer),
-    Effect.catchAll(() => Effect.void),
+    Effect.catchTags({
+      BadArgument: () => Effect.void,
+      SystemError: () => Effect.void,
+    }),
   )
 
 export type Theme = {
@@ -167,7 +170,7 @@ export const ThemeProvider = ({ children }: { readonly children: ReactNode }) =>
         yield* writeCache(freshInput)
       }
     }).pipe(
-      Effect.catchAll(() => Effect.void),
+      Effect.catchTag("UnknownException", () => Effect.void),
       Effect.ensuring(
         Effect.sync(() => {
           if (active) setIsLoading(false)
