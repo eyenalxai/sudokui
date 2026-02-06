@@ -2,6 +2,8 @@ import type { SudokuGrid } from "../../lib/sudoku/grid/sudoku-grid"
 import { FrameBufferRenderable, OptimizedBuffer, RGBA, type RenderContext } from "@opentui/core"
 import { extend } from "@opentui/react"
 
+import { hasConflict } from "../../lib/sudoku/grid/validation"
+
 import {
   drawCandidates,
   drawCellValue,
@@ -32,6 +34,7 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
   private _selectedTextColor: RGBA
   private _candidateColor: RGBA
   private _highlightTextColor: RGBA
+  private _errorColor: RGBA
 
   constructor(ctx: RenderContext, options: SudokuGridRenderableOptions) {
     super(ctx, options)
@@ -54,6 +57,7 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
     this._selectedTextColor = resolveColor(options.selectedTextColor, RGBA.fromHex("#000000"))
     this._candidateColor = resolveColor(options.candidateColor, RGBA.fromHex("#666666"))
     this._highlightTextColor = resolveColor(options.highlightTextColor, RGBA.fromHex("#ffffff"))
+    this._errorColor = resolveColor(options.errorColor, RGBA.fromHex("#ff0000"))
   }
 
   set grid(value: SudokuGrid) {
@@ -119,6 +123,10 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
   }
   set highlightTextColor(value: string | RGBA) {
     this._highlightTextColor = resolveColor(value, this._highlightTextColor)
+    this.requestRender()
+  }
+  set errorColor(value: string | RGBA) {
+    this._errorColor = resolveColor(value, this._errorColor)
     this.requestRender()
   }
 
@@ -239,6 +247,7 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
           )
         } else {
           const isHighlighted = cell.value === this._highlightedNumber
+          const hasError = hasConflict(this._grid, cellIndex)
           drawCellValue(
             frameBuffer,
             cell,
@@ -248,6 +257,7 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
             centerY,
             isSelected,
             isHighlighted,
+            hasError,
             this._fixedColor,
             this._valueColor,
             this._selectedTextColor,
@@ -255,6 +265,7 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
             this._highlightColor,
             this._backgroundColor,
             this._highlightTextColor,
+            this._errorColor,
           )
         }
       }

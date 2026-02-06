@@ -6,7 +6,6 @@ import type { ReactNode } from "react"
 import { useCallback, useState } from "react"
 
 import { useTheme } from "../providers/theme"
-import { useToast } from "../providers/toast"
 
 import { SudokuGridDisplay } from "./sudoku-grid"
 
@@ -21,7 +20,6 @@ type GameScreenProps = {
 
 export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps): ReactNode => {
   const theme = useTheme()
-  const toast = useToast()
   const [selectedCell, setSelectedCell] = useState(0)
   const [highlightedNumber, setHighlightedNumber] = useState<number | null>(null)
   const [, forceUpdate] = useState({})
@@ -59,32 +57,25 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
           Effect.gen(function* () {
             yield* grid.setCell(selectedCell, 0)
             forceUpdate({})
-          }).pipe(
-            Effect.catchAll((error) =>
-              Effect.sync(() => {
-                toast.error(error, "Error clearing cell")
-              }),
-            ),
-          ),
+          }),
         )
         return
       }
 
       // Set the cell value
+      // Silently ignore CellConflictError - conflicting values are allowed
+      // and shown visually with error highlighting instead of blocking
+      // Use Effect.ensuring to always trigger re-render even on error
       void Effect.runPromise(
         Effect.gen(function* () {
           yield* grid.setCell(selectedCell, value)
-          forceUpdate({})
         }).pipe(
-          Effect.catchAll((error) =>
-            Effect.sync(() => {
-              toast.error(error, "Invalid move")
-            }),
-          ),
+          Effect.catchTag("CellConflictError", () => Effect.void),
+          Effect.ensuring(Effect.sync(() => forceUpdate({}))),
         ),
       )
     },
-    [grid, selectedCell, toast],
+    [grid, selectedCell],
   )
 
   useKeyboard((key) => {

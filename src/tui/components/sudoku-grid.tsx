@@ -41,6 +41,7 @@ export const SudokuGridDisplay = ({
       selectedTextColor={theme.background}
       candidateColor={theme.textMuted}
       highlightTextColor={theme.background}
+      errorColor={theme.error}
     />
   )
 }

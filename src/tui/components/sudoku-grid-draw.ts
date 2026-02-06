@@ -26,6 +26,7 @@ export type SudokuGridRenderableOptions = FrameBufferOptions & {
   selectedTextColor?: string | RGBA
   candidateColor?: string | RGBA
   highlightTextColor?: string | RGBA
+  errorColor?: string | RGBA
 }
 
 export const GRID_CHARS = {
@@ -93,6 +94,7 @@ export const drawCellValue = (
   centerY: number,
   isSelected: boolean,
   isHighlighted: boolean,
+  hasError: boolean,
   fixedColor: RGBA,
   valueColor: RGBA,
   selectedTextColor: RGBA,
@@ -100,16 +102,25 @@ export const drawCellValue = (
   highlightColor: RGBA,
   backgroundColor: RGBA,
   highlightTextColor: RGBA,
+  errorColor: RGBA,
 ): void => {
   const isFixed = cell.fixed
-  const fg = isHighlighted
-    ? highlightTextColor
-    : isSelected
-      ? selectedTextColor
-      : isFixed
-        ? fixedColor
-        : valueColor
-  const bg = isHighlighted ? highlightColor : isSelected ? selectedBackgroundColor : backgroundColor
+  const fg = hasError
+    ? backgroundColor
+    : isHighlighted
+      ? highlightTextColor
+      : isSelected
+        ? selectedTextColor
+        : isFixed
+          ? fixedColor
+          : valueColor
+  const bg = hasError
+    ? errorColor
+    : isHighlighted
+      ? highlightColor
+      : isSelected
+        ? selectedBackgroundColor
+        : backgroundColor
   const attributes = isFixed ? TextAttributes.BOLD : 0
 
   const x = cellX + centerX

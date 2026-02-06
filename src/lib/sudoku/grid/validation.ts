@@ -33,3 +33,10 @@ export const isValid = (grid: SudokuGrid): boolean => {
   }
   return true
 }
+
+export const hasConflict = (grid: SudokuGrid, cellIndex: number): boolean => {
+  const cell = grid.cells[cellIndex]
+  if (cell === undefined || cell.value === 0) return false
+  const peers = getPeers(cellIndex)
+  return peers.some((peer) => grid.cells[peer]?.value === cell.value)
+}
