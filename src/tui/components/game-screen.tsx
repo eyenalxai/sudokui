@@ -3,7 +3,7 @@ import type { DifficultyLevel, Puzzle } from "../../lib/sudoku/puzzle-sets"
 import { useKeyboard } from "@opentui/react"
 import { Effect } from "effect"
 import type { ReactNode } from "react"
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 import { isComplete, isValid } from "../../lib/sudoku/grid/validation"
 import { useTheme } from "../providers/theme"
@@ -12,6 +12,7 @@ import { useToast } from "../providers/toast"
 import { SudokuGridDisplay } from "./sudoku-grid"
 
 const GRID_SIZE = 9
+const MAX_HISTORY_SIZE = 100
 
 type GameScreenProps = {
   readonly puzzle: Puzzle
@@ -20,6 +21,22 @@ type GameScreenProps = {
   readonly onReturnToMenu: () => void
 }
 
+type GridSnapshot = {
+  cells: Array<{
+    value: number
+    candidates: number
+    fixed: boolean
+  }>
+}
+
+type HistoryEntry = {
+  grid: GridSnapshot
+}
+
+const createInitialSnapshot = (grid: SudokuGrid): HistoryEntry => ({
+  grid: { cells: grid.cells.map((cell) => ({ ...cell })) },
+})
+
 export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps): ReactNode => {
   const theme = useTheme()
   const toast = useToast()
@@ -27,6 +44,68 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
   const [highlightedNumber, setHighlightedNumber] = useState<number | null>(null)
   const [, forceUpdate] = useState({})
   const [hasWon, setHasWon] = useState(false)
+
+  // Initialize history with initial state
+  const initialHistory = useMemo(
+    () => [createInitialSnapshot(grid)],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
+  const [history, setHistory] = useState<HistoryEntry[]>(initialHistory)
+  const [historyIndex, setHistoryIndex] = useState(0)
+
+  const restoreSnapshot = useCallback(
+    (snapshot: GridSnapshot) => {
+      grid.cells = snapshot.cells.map((cell) => ({ ...cell }))
+    },
+    [grid],
+  )
+
+  const pushHistory = useCallback(() => {
+    const entry: HistoryEntry = {
+      grid: { cells: grid.cells.map((cell) => ({ ...cell })) },
+    }
+
+    setHistory((prev) => {
+      // Remove any redo states if we're not at the end
+      const newHistory = prev.slice(0, historyIndex + 1)
+      newHistory.push(entry)
+      // Limit history size - keep initial state (index 0) always
+      if (newHistory.length > MAX_HISTORY_SIZE) {
+        newHistory.splice(1, 1) // Remove oldest non-initial entry
+      }
+      return newHistory
+    })
+
+    setHistoryIndex((prev) => {
+      const nextIndex = prev + 1
+      return nextIndex >= MAX_HISTORY_SIZE ? MAX_HISTORY_SIZE - 1 : nextIndex
+    })
+  }, [historyIndex])
+
+  const undo = useCallback(() => {
+    if (historyIndex <= 0) return // Can't undo past initial state
+
+    const newIndex = historyIndex - 1
+    const entry = history[newIndex]
+    if (entry) {
+      restoreSnapshot(entry.grid)
+      setHistoryIndex(newIndex)
+      forceUpdate({})
+    }
+  }, [history, historyIndex, restoreSnapshot])
+
+  const redo = useCallback(() => {
+    if (historyIndex >= history.length - 1) return
+
+    const newIndex = historyIndex + 1
+    const entry = history[newIndex]
+    if (entry) {
+      restoreSnapshot(entry.grid)
+      setHistoryIndex(newIndex)
+      forceUpdate({})
+    }
+  }, [history, historyIndex, restoreSnapshot])
 
   const checkForWin = useCallback(() => {
     if (!hasWon && isComplete(grid) && isValid(grid)) {
@@ -66,6 +145,11 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
         return
       }
 
+      // Only process if value is actually changing
+      if (cell.value === value) {
+        return
+      }
+
       if (value === 0) {
         // Clear the cell
         void Effect.runPromise(
@@ -74,6 +158,7 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
           }).pipe(
             Effect.ensuring(
               Effect.sync(() => {
+                pushHistory()
                 forceUpdate({})
                 checkForWin()
               }),
@@ -94,6 +179,7 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
           Effect.catchTag("CellConflictError", () => Effect.void),
           Effect.ensuring(
             Effect.sync(() => {
+              pushHistory()
               forceUpdate({})
               checkForWin()
             }),
@@ -101,10 +187,22 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
         ),
       )
     },
-    [grid, selectedCell, checkForWin],
+    [grid, selectedCell, checkForWin, pushHistory],
   )
 
   useKeyboard((key) => {
+    // Undo: Ctrl+Z
+    if (key.ctrl && key.name === "z" && !key.shift) {
+      undo()
+      return
+    }
+
+    // Redo: Ctrl+Shift+Z
+    if (key.ctrl && key.shift && key.name === "z") {
+      redo()
+      return
+    }
+
     // Navigation
     if (key.name === "up" || key.name === "w") {
       moveCursor("up")
@@ -164,8 +262,8 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
       />
       <box height={1} />
       <text fg={theme.textMuted}>
-        ↑/↓/←/→ or wasd to move • 1-9 to fill • 0/Del/Back to clear • Alt+1-9 to highlight • Esc/q
-        to menu
+        ↑/↓/←/→ or wasd to move • 1-9 to fill • 0/Del/Back to clear • Alt+1-9 to highlight • Ctrl+Z
+        undo • Ctrl+Shift+Z redo • Esc/q to menu
       </text>
     </box>
   )
