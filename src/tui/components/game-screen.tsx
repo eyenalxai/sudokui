@@ -264,9 +264,9 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
       />
       <box height={1} />
       <text fg={theme.textMuted}>
-        ↑/↓/←/→ or wasd to move • 1-9 to fill • 0/Del/Back to clear • Alt+1-9 to highlight • Ctrl+Z
-        undo • Ctrl+Shift+Z redo • Esc/q to menu
+        ↑/↓/←/→ or wasd to move • 1-9 to fill • 0/Del/Back to clear • Alt+1-9 to highlight
       </text>
+      <text fg={theme.textMuted}>Ctrl+Z undo • Ctrl+Shift+Z redo • Esc/q to menu</text>
     </box>
   )
 }
