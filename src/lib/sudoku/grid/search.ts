@@ -52,7 +52,7 @@ export const setNakedSingles = (
   void,
   InvalidCellIndexError | InvalidCellValueError | CellConflictError | NoCandidatesRemainingError
 > => {
-  const { cells } = grid.getSnapshot()
+  const { cells } = grid.getCellsRef()
   const setCell = (index: number, value: number) => grid.setCell(index, value)
   const findSingles = () => findNakedSingles(grid)
   return Effect.gen(function* () {

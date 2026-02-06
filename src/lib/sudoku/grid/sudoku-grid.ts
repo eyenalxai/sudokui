@@ -1,8 +1,7 @@
-import { Effect, Schema } from "effect"
+import type { CellIndex } from "../puzzle.ts"
+import { Effect } from "effect"
 
 import {
-  CellIndex,
-  CellValue,
   CellConflictError,
   InvalidCellIndexError,
   InvalidCellValueError,
@@ -10,31 +9,16 @@ import {
 } from "../puzzle.ts"
 
 import { getCandidateMask } from "./candidates.ts"
-import { ALL_CANDIDATES, GRID_SIZE, TOTAL_CELLS } from "./constants.ts"
+import { ALL_CANDIDATES, TOTAL_CELLS } from "./constants.ts"
+import { getCellIndexOrFail, validateCandidateValue, validateCellValue } from "./grid-validation.ts"
 import { getPeers } from "./helpers.ts"
 import { parsePuzzle, gridToString } from "./parsing.ts"
-
-const isCellIndex = Schema.is(CellIndex)
-const isCellValue = Schema.is(CellValue)
 
 export interface Cell {
   value: number
   candidates: number
   fixed: boolean
 }
-
-const getCellIndexOrFail = (index: number): Effect.Effect<CellIndex, InvalidCellIndexError> =>
-  Effect.gen(function* () {
-    if (!isCellIndex(index)) {
-      return yield* Effect.fail(
-        new InvalidCellIndexError({
-          index,
-          message: `Invalid cell index: ${index}`,
-        }),
-      )
-    }
-    return index
-  })
 
 export class SudokuGrid {
   cells: Cell[]
@@ -47,7 +31,7 @@ export class SudokuGrid {
     }))
   }
 
-  getSnapshot(): { cells: Cell[] } {
+  getCellsRef(): { cells: Cell[] } {
     return { cells: this.cells }
   }
 
@@ -130,19 +114,11 @@ export class SudokuGrid {
     void,
     InvalidCellIndexError | InvalidCellValueError | CellConflictError | NoCandidatesRemainingError
   > {
-    const { cells } = this.getSnapshot()
+    const { cells } = this.getCellsRef()
     return Effect.gen(function* () {
       const cellIndex = yield* getCellIndexOrFail(index)
 
-      if (value < 0 || value > GRID_SIZE || !isCellValue(value)) {
-        return yield* Effect.fail(
-          new InvalidCellValueError({
-            cellIndex,
-            value,
-            message: `Invalid cell value: ${value}`,
-          }),
-        )
-      }
+      const cellValue = yield* validateCellValue(cellIndex, value)
 
       const cell = cells[cellIndex]
       if (cell === undefined) {
@@ -204,11 +180,11 @@ export class SudokuGrid {
         }
       }
 
-      if (conflictingIndex !== null && value !== 0) {
+      if (conflictingIndex !== null && cellValue !== 0) {
         return yield* Effect.fail(
           new CellConflictError({
             cellIndex,
-            value,
+            value: cellValue,
             conflictingIndex,
             message: `Cell conflict at ${cellIndex} with peer ${conflictingIndex}`,
           }),
@@ -220,10 +196,14 @@ export class SudokuGrid {
   removeCandidate(
     index: number,
     value: number,
-  ): Effect.Effect<void, InvalidCellIndexError | NoCandidatesRemainingError> {
-    const { cells } = this.getSnapshot()
+  ): Effect.Effect<
+    void,
+    InvalidCellIndexError | InvalidCellValueError | NoCandidatesRemainingError
+  > {
+    const { cells } = this.getCellsRef()
     return Effect.gen(function* () {
       const cellIndex = yield* getCellIndexOrFail(index)
+      yield* validateCandidateValue(cellIndex, value)
       const cell = cells[cellIndex]
       if (cell === undefined) {
         return yield* Effect.fail(
@@ -235,6 +215,7 @@ export class SudokuGrid {
       }
       if (cell.value !== 0) return
 
+      // Manual pencil marks: do not enforce peer constraints here.
       cell.candidates &= ~getCandidateMask(value)
       if (cell.candidates === 0) {
         return yield* Effect.fail(
@@ -244,6 +225,30 @@ export class SudokuGrid {
           }),
         )
       }
+    })
+  }
+
+  addCandidate(
+    index: number,
+    value: number,
+  ): Effect.Effect<void, InvalidCellIndexError | InvalidCellValueError> {
+    const { cells } = this.getCellsRef()
+    return Effect.gen(function* () {
+      const cellIndex = yield* getCellIndexOrFail(index)
+      yield* validateCandidateValue(cellIndex, value)
+      const cell = cells[cellIndex]
+      if (cell === undefined) {
+        return yield* Effect.fail(
+          new InvalidCellIndexError({
+            index: cellIndex,
+            message: `Invalid cell index: ${cellIndex}`,
+          }),
+        )
+      }
+      if (cell.value !== 0) return
+
+      // Manual pencil marks: do not enforce peer constraints here.
+      cell.candidates |= getCandidateMask(value)
     })
   }
 

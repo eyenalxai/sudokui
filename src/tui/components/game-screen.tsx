@@ -5,14 +5,27 @@ import { Effect } from "effect"
 import type { ReactNode } from "react"
 import { useCallback, useReducer, useState } from "react"
 
+import { getCandidateMask } from "../../lib/sudoku/grid/candidates"
 import { isComplete, isValid } from "../../lib/sudoku/grid/validation"
 import { useTheme } from "../providers/theme"
 import { useToast } from "../providers/toast"
 
+import { GameHelp } from "./game-help"
 import { SudokuGridDisplay } from "./sudoku-grid"
 
 const GRID_SIZE = 9
 const MAX_HISTORY_SIZE = 100
+const NUMPAD_MAP: Record<string, number> = {
+  kp1: 1,
+  kp2: 2,
+  kp3: 3,
+  kp4: 4,
+  kp5: 5,
+  kp6: 6,
+  kp7: 7,
+  kp8: 8,
+  kp9: 9,
+}
 
 type GameScreenProps = {
   readonly puzzle: Puzzle
@@ -33,11 +46,7 @@ type HistoryEntry = {
   grid: GridSnapshot
 }
 
-type HistoryState = {
-  entries: HistoryEntry[]
-  index: number
-}
-
+type HistoryState = { entries: HistoryEntry[]; index: number }
 type HistoryAction = { type: "push"; entry: HistoryEntry } | { type: "undo" } | { type: "redo" }
 
 const createSnapshot = (grid: SudokuGrid): HistoryEntry => ({
@@ -215,23 +224,40 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
     } else if (key.name === "right" || key.name === "d") {
       moveCursor("right")
     }
-    // Alt+number to highlight candidates (check before regular number input)
+    // Alt+number to highlight candidates
     else if (key.meta) {
-      const numpadMap: Record<string, number> = {
-        kp1: 1,
-        kp2: 2,
-        kp3: 3,
-        kp4: 4,
-        kp5: 5,
-        kp6: 6,
-        kp7: 7,
-        kp8: 8,
-        kp9: 9,
-      }
       const num =
-        numpadMap[key.name] ?? (key.name >= "1" && key.name <= "9" ? parseInt(key.name, 10) : null)
-      if (num !== null) {
-        setHighlightedNumber((prev) => (prev === num ? null : num))
+        NUMPAD_MAP[key.name] ?? (key.name >= "1" && key.name <= "9" ? parseInt(key.name, 10) : null)
+      if (num !== null) setHighlightedNumber((prev) => (prev === num ? null : num))
+    }
+    // Ctrl+number to toggle candidate
+    else if (key.ctrl && !key.shift) {
+      const value =
+        NUMPAD_MAP[key.name] ?? (key.name >= "1" && key.name <= "9" ? parseInt(key.name, 10) : null)
+      if (value !== null) {
+        const cell = grid.cells[selectedCell]
+        if (cell && cell.value === 0) {
+          const mask = getCandidateMask(value)
+          const hasCandidate = (cell.candidates & mask) !== 0
+          void Effect.runPromise(
+            Effect.gen(function* () {
+              if (hasCandidate) yield* grid.removeCandidate(selectedCell, value)
+              else yield* grid.addCandidate(selectedCell, value)
+            }).pipe(
+              Effect.catchTags({
+                NoCandidatesRemainingError: () => Effect.void,
+                InvalidCellIndexError: () => Effect.void,
+                InvalidCellValueError: () => Effect.void,
+              }),
+              Effect.tap(() =>
+                Effect.sync(() => {
+                  pushHistory()
+                  forceUpdate({})
+                }),
+              ),
+            ),
+          )
+        }
       }
     }
     // Number input
@@ -263,10 +289,7 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
         highlightedNumber={highlightedNumber}
       />
       <box height={1} />
-      <text fg={theme.textMuted}>
-        ↑/↓/←/→ or wasd to move • 1-9 to fill • 0/Del/Back to clear • Alt+1-9 to highlight
-      </text>
-      <text fg={theme.textMuted}>Ctrl+Z undo • Ctrl+Shift+Z redo • Esc/q to menu</text>
+      <GameHelp />
     </box>
   )
 }
