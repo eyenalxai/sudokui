@@ -208,16 +208,17 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
     }
 
     // Candidate positions in a 3x3 grid within each cell (5x3 cell size)
+    // Layout: 1,2,3 on bottom row, 4,5,6 middle, 7,8,9 top
     const candidatePositions: Array<[number, number]> = [
-      [0, 0],
-      [2, 0],
-      [4, 0], // 1, 2, 3
-      [0, 1],
-      [2, 1],
-      [4, 1], // 4, 5, 6
       [0, 2],
       [2, 2],
-      [4, 2], // 7, 8, 9
+      [4, 2], // 1, 2, 3 (bottom)
+      [0, 1],
+      [2, 1],
+      [4, 1], // 4, 5, 6 (middle)
+      [0, 0],
+      [2, 0],
+      [4, 0], // 7, 8, 9 (top)
     ]
 
     for (let row = 0; row < GRID_SIZE; row++) {
