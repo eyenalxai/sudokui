@@ -3,7 +3,7 @@ import type { DifficultyLevel, Puzzle } from "../../lib/sudoku/puzzle-sets"
 import { useKeyboard } from "@opentui/react"
 import { Effect } from "effect"
 import type { ReactNode } from "react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useReducer, useState } from "react"
 
 import { isComplete, isValid } from "../../lib/sudoku/grid/validation"
 import { useTheme } from "../providers/theme"
@@ -33,9 +33,40 @@ type HistoryEntry = {
   grid: GridSnapshot
 }
 
-const createInitialSnapshot = (grid: SudokuGrid): HistoryEntry => ({
+type HistoryState = {
+  entries: HistoryEntry[]
+  index: number
+}
+
+type HistoryAction = { type: "push"; entry: HistoryEntry } | { type: "undo" } | { type: "redo" }
+
+const createSnapshot = (grid: SudokuGrid): HistoryEntry => ({
   grid: { cells: grid.cells.map((cell) => ({ ...cell })) },
 })
+
+const initHistoryState = (grid: SudokuGrid): HistoryState => ({
+  entries: [createSnapshot(grid)],
+  index: 0,
+})
+
+const historyReducer = (state: HistoryState, action: HistoryAction): HistoryState => {
+  switch (action.type) {
+    case "push": {
+      const entries = state.entries.slice(0, state.index + 1)
+      entries.push(action.entry)
+      if (entries.length > MAX_HISTORY_SIZE) {
+        entries.splice(1, 1)
+      }
+      return { entries, index: entries.length - 1 }
+    }
+    case "undo":
+      return state.index <= 0 ? state : { ...state, index: state.index - 1 }
+    case "redo":
+      return state.index >= state.entries.length - 1 ? state : { ...state, index: state.index + 1 }
+    default:
+      return state
+  }
+}
 
 export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps): ReactNode => {
   const theme = useTheme()
@@ -45,14 +76,7 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
   const [, forceUpdate] = useState({})
   const [hasWon, setHasWon] = useState(false)
 
-  // Initialize history with initial state
-  const initialHistory = useMemo(
-    () => [createInitialSnapshot(grid)],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  )
-  const [history, setHistory] = useState<HistoryEntry[]>(initialHistory)
-  const [historyIndex, setHistoryIndex] = useState(0)
+  const [historyState, dispatchHistory] = useReducer(historyReducer, grid, initHistoryState)
 
   const restoreSnapshot = useCallback(
     (snapshot: GridSnapshot) => {
@@ -62,50 +86,32 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
   )
 
   const pushHistory = useCallback(() => {
-    const entry: HistoryEntry = {
-      grid: { cells: grid.cells.map((cell) => ({ ...cell })) },
-    }
-
-    setHistory((prev) => {
-      // Remove any redo states if we're not at the end
-      const newHistory = prev.slice(0, historyIndex + 1)
-      newHistory.push(entry)
-      // Limit history size - keep initial state (index 0) always
-      if (newHistory.length > MAX_HISTORY_SIZE) {
-        newHistory.splice(1, 1) // Remove oldest non-initial entry
-      }
-      return newHistory
-    })
-
-    setHistoryIndex((prev) => {
-      const nextIndex = prev + 1
-      return nextIndex >= MAX_HISTORY_SIZE ? MAX_HISTORY_SIZE - 1 : nextIndex
-    })
-  }, [historyIndex])
+    dispatchHistory({ type: "push", entry: createSnapshot(grid) })
+  }, [grid])
 
   const undo = useCallback(() => {
-    if (historyIndex <= 0) return // Can't undo past initial state
+    if (historyState.index <= 0) return // Can't undo past initial state
 
-    const newIndex = historyIndex - 1
-    const entry = history[newIndex]
+    const newIndex = historyState.index - 1
+    const entry = historyState.entries[newIndex]
     if (entry) {
       restoreSnapshot(entry.grid)
-      setHistoryIndex(newIndex)
+      dispatchHistory({ type: "undo" })
       forceUpdate({})
     }
-  }, [history, historyIndex, restoreSnapshot])
+  }, [historyState.entries, historyState.index, restoreSnapshot])
 
   const redo = useCallback(() => {
-    if (historyIndex >= history.length - 1) return
+    if (historyState.index >= historyState.entries.length - 1) return
 
-    const newIndex = historyIndex + 1
-    const entry = history[newIndex]
+    const newIndex = historyState.index + 1
+    const entry = historyState.entries[newIndex]
     if (entry) {
       restoreSnapshot(entry.grid)
-      setHistoryIndex(newIndex)
+      dispatchHistory({ type: "redo" })
       forceUpdate({})
     }
-  }, [history, historyIndex, restoreSnapshot])
+  }, [historyState.entries, historyState.index, restoreSnapshot])
 
   const checkForWin = useCallback(() => {
     if (!hasWon && isComplete(grid) && isValid(grid)) {
@@ -150,44 +156,40 @@ export const GameScreen = ({ difficulty, grid, onReturnToMenu }: GameScreenProps
         return
       }
 
-      if (value === 0) {
-        // Clear the cell
-        void Effect.runPromise(
-          Effect.gen(function* () {
-            yield* grid.setCell(selectedCell, 0)
-          }).pipe(
-            Effect.ensuring(
-              Effect.sync(() => {
-                pushHistory()
-                forceUpdate({})
-                checkForWin()
-              }),
-            ),
-          ),
-        )
-        return
-      }
-
-      // Set the cell value
-      // Silently ignore CellConflictError - conflicting values are allowed
-      // and shown visually with error highlighting instead of blocking
-      // Use Effect.ensuring to always trigger re-render even on error
+      // Set the cell value (conflicts/contradictions are allowed and highlighted visually)
       void Effect.runPromise(
         Effect.gen(function* () {
           yield* grid.setCell(selectedCell, value)
         }).pipe(
-          Effect.catchTag("CellConflictError", () => Effect.void),
-          Effect.ensuring(
-            Effect.sync(() => {
-              pushHistory()
-              forceUpdate({})
-              checkForWin()
-            }),
-          ),
+          Effect.as("success" as const),
+          Effect.catchTags({
+            CellConflictError: () => Effect.succeed("success" as const),
+            NoCandidatesRemainingError: () => Effect.succeed("success" as const),
+            InvalidCellIndexError: (error) =>
+              Effect.succeed({ kind: "error" as const, message: error.message }),
+            InvalidCellValueError: (error) =>
+              Effect.succeed({ kind: "error" as const, message: error.message }),
+          }),
+          Effect.tap((result) => {
+            if (result === "success") {
+              return Effect.sync(() => {
+                pushHistory()
+                forceUpdate({})
+                checkForWin()
+              })
+            }
+            return Effect.sync(() => {
+              toast.show({
+                title: "Invalid move",
+                message: result.message,
+                variant: "error",
+              })
+            })
+          }),
         ),
       )
     },
-    [grid, selectedCell, checkForWin, pushHistory],
+    [grid, selectedCell, checkForWin, pushHistory, toast],
   )
 
   useKeyboard((key) => {
