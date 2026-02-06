@@ -238,8 +238,7 @@ export class SudokuGridRenderable extends FrameBufferRenderable {
             this._highlightTextColor,
           )
         } else {
-          const isHighlighted =
-            cell.value === this._highlightedNumber && cellIndex !== this._selectedCell
+          const isHighlighted = cell.value === this._highlightedNumber
           drawCellValue(
             frameBuffer,
             cell,

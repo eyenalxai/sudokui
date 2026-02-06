@@ -102,14 +102,14 @@ export const drawCellValue = (
   highlightTextColor: RGBA,
 ): void => {
   const isFixed = cell.fixed
-  const fg = isSelected
-    ? selectedTextColor
-    : isHighlighted
-      ? highlightTextColor
+  const fg = isHighlighted
+    ? highlightTextColor
+    : isSelected
+      ? selectedTextColor
       : isFixed
         ? fixedColor
         : valueColor
-  const bg = isSelected ? selectedBackgroundColor : isHighlighted ? highlightColor : backgroundColor
+  const bg = isHighlighted ? highlightColor : isSelected ? selectedBackgroundColor : backgroundColor
   const attributes = isFixed ? TextAttributes.BOLD : 0
 
   const x = cellX + centerX
