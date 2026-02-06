@@ -46,6 +46,23 @@ export type Theme = {
   background: string
   border: string
   borderSubtle: string
+  // Full ANSI palette (0-15) - use these for custom theming
+  palette0: string
+  palette1: string
+  palette2: string
+  palette3: string
+  palette4: string
+  palette5: string
+  palette6: string
+  palette7: string
+  palette8: string
+  palette9: string
+  palette10: string
+  palette11: string
+  palette12: string
+  palette13: string
+  palette14: string
+  palette15: string
 }
 
 type PaletteInput = {
@@ -80,6 +97,23 @@ const buildTheme = (input: PaletteInput): Theme => {
     background,
     border,
     borderSubtle,
+    // Full ANSI palette
+    palette0: colorAt(0),
+    palette1: colorAt(1),
+    palette2: colorAt(2),
+    palette3: colorAt(3),
+    palette4: colorAt(4),
+    palette5: colorAt(5),
+    palette6: colorAt(6),
+    palette7: colorAt(7),
+    palette8: colorAt(8),
+    palette9: colorAt(9),
+    palette10: colorAt(10),
+    palette11: colorAt(11),
+    palette12: colorAt(12),
+    palette13: colorAt(13),
+    palette14: colorAt(14),
+    palette15: colorAt(15),
   }
 }
 
